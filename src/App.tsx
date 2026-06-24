@@ -12,6 +12,7 @@ import { AdvocateWorkspace } from '@/pages/admin/advocates/AdvocateWorkspace';
 import { CollectionsLedger } from '@/pages/admin/reports/CollectionsLedger';
 import { OutstandingLedger } from '@/pages/admin/reports/OutstandingLedger';
 import { SettingsPage } from '@/pages/admin/settings/SettingsPage';
+import { PaymentRequestsPage } from '@/pages/admin/payment-requests/PaymentRequestsPage';
 import { ErrorBoundary } from '@/components/system/ErrorBoundary';
 import { ROUTES } from '@/config/routes';
 
@@ -71,6 +72,10 @@ const router = createBrowserRouter([
       {
         path: 'ledgers/outstanding',
         element: <OutstandingLedger />,
+      },
+      {
+        path: 'payment-requests',
+        element: <PaymentRequestsPage />,
       },
       {
         path: 'ledgers',

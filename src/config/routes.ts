@@ -9,4 +9,5 @@ export const ROUTES = {
   ADMIN_LEDGERS_COLLECTIONS: '/admin/ledgers/collections',
   ADMIN_LEDGERS_OUTSTANDING: '/admin/ledgers/outstanding',
   ADMIN_SETTINGS: '/admin/settings',
+  ADMIN_PAYMENT_REQUESTS: '/admin/payment-requests',
 };

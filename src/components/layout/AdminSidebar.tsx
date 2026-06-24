@@ -42,6 +42,12 @@ export const AdminSidebar: React.FC = () => {
       permission: PERMISSIONS.VIEW_REPORTS,
     },
     {
+      to: ROUTES.ADMIN_PAYMENT_REQUESTS,
+      label: 'Payment Requests',
+      icon: <Receipt className="h-4 w-4" />,
+      permission: PERMISSIONS.COLLECT_PAYMENTS,
+    },
+    {
       to: ROUTES.ADMIN_SETTINGS,
       label: 'System Settings',
       icon: <Settings className="h-4 w-4" />,

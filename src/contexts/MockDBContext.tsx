@@ -13,6 +13,7 @@ import type {
   OfficeTerm,
   AdditionalFeeRule,
   TreasuryTransaction,
+  PaymentRequest,
 } from '../types';
 import { STORAGE_KEYS } from '@/config/storage';
 import { SCHEMA_VERSION, DEFAULT_ASSOCIATION_SETTINGS } from '@/config/constants';
@@ -44,6 +45,8 @@ interface MockDBContextProps {
   setAdditionalFeeRules: React.Dispatch<React.SetStateAction<AdditionalFeeRule[]>>;
   treasuryTransactions: TreasuryTransaction[];
   setTreasuryTransactions: React.Dispatch<React.SetStateAction<TreasuryTransaction[]>>;
+  paymentRequests: PaymentRequest[];
+  setPaymentRequests: React.Dispatch<React.SetStateAction<PaymentRequest[]>>;
 
   login: (username: string, password: string) => Promise<User | null>;
   logout: () => void;
@@ -93,6 +96,7 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [officeTerms, setOfficeTerms] = useState<OfficeTerm[]>([]);
   const [additionalFeeRules, setAdditionalFeeRules] = useState<AdditionalFeeRule[]>([]);
   const [treasuryTransactions, setTreasuryTransactions] = useState<TreasuryTransaction[]>([]);
+  const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
 
   // Load initial data from localStorage or seed
   useEffect(() => {
@@ -124,6 +128,93 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setOfficeTerms(JSON.parse(getStored(STORAGE_KEYS.OFFICE_TERMS) || '[]'));
       setAdditionalFeeRules(JSON.parse(getStored(STORAGE_KEYS.ADDITIONAL_FEE_RULES) || '[]'));
       setTreasuryTransactions(JSON.parse(getStored(STORAGE_KEYS.TREASURY_TRANSACTIONS) || '[]'));
+      
+      const storedRequests = getStored(STORAGE_KEYS.PAYMENT_REQUESTS);
+      if (storedRequests) {
+        setPaymentRequests(JSON.parse(storedRequests));
+      } else {
+        const currentAdvocates = JSON.parse(getStored(STORAGE_KEYS.ADVOCATES) || '[]');
+        const currentDues = JSON.parse(getStored(STORAGE_KEYS.DUES) || '[]');
+        const currentTransactions = JSON.parse(getStored(STORAGE_KEYS.TRANSACTIONS) || '[]');
+        const currentUsers = JSON.parse(getStored(STORAGE_KEYS.USERS) || '[]');
+        
+        const sandeep = currentAdvocates.find((a: any) => a.enrolment_no === 'K/876/2017');
+        const manoj = currentAdvocates.find((a: any) => a.enrolment_no === 'K/1092/2015');
+        const staff = currentUsers.find((u: any) => u.username === 'staff');
+        
+        const demoRequests: PaymentRequest[] = [];
+        if (sandeep) {
+          demoRequests.push({
+            id: 'REQ-000001',
+            advocate_id: sandeep.id,
+            submitted_date: new Date(Date.now() - 3600000 * 24).toISOString(),
+            payment_mode: 'UPI',
+            amount: 200,
+            reference_number: 'UPI9988776655',
+            proof_attachment_url: 'https://example.com/receipt-proof-1.pdf',
+            original_file_name: 'receipt-proof-1.pdf',
+            mime_type: 'application/pdf',
+            remarks: 'Paid via GPay last evening.',
+            status: 'PENDING',
+            requested_due_ids: currentDues
+              .filter((d: any) => d.advocate_id === sandeep.id && d.status === 'UNPAID')
+              .slice(0, 2)
+              .map((d: any) => d.id),
+            requested_advance_months: 0,
+          });
+          
+          const sTx = currentTransactions.find((t: any) => t.advocate_id === sandeep.id);
+          demoRequests.push({
+            id: 'REQ-000002',
+            advocate_id: sandeep.id,
+            submitted_date: new Date(Date.now() - 3600000 * 48).toISOString(),
+            payment_mode: 'BANK_TRANSFER',
+            amount: 300,
+            reference_number: 'TXN8877665544',
+            proof_attachment_url: 'https://example.com/screenshot.jpg',
+            original_file_name: 'screenshot.jpg',
+            mime_type: 'image/jpeg',
+            remarks: 'IMPS transfer from State Bank of India.',
+            status: 'APPROVED',
+            requested_due_ids: [],
+            requested_advance_months: 3,
+            approved_due_ids: [],
+            approved_advance_months: 3,
+            reviewed_by: staff?.id || 'staff-id',
+            reviewed_at: new Date(Date.now() - 3600000 * 40).toISOString(),
+            review_notes: 'Verified transfer from SBI statements.',
+            generated_transaction_id: sTx?.id || 1,
+            generated_receipt_number: sTx?.receipt_no || 'HBA-2026-000001',
+          });
+        }
+        
+        if (manoj) {
+          demoRequests.push({
+            id: 'REQ-000003',
+            advocate_id: manoj.id,
+            submitted_date: new Date(Date.now() - 3600000 * 72).toISOString(),
+            payment_mode: 'CHEQUE',
+            amount: 500,
+            reference_number: 'CHQ123456',
+            proof_attachment_url: 'https://example.com/cheque-copy.png',
+            original_file_name: 'cheque-copy.png',
+            mime_type: 'image/png',
+            remarks: 'Cheque dropped in dropbox.',
+            status: 'REJECTED',
+            requested_due_ids: currentDues
+              .filter((d: any) => d.advocate_id === manoj.id && d.status === 'UNPAID')
+              .slice(0, 1)
+              .map((d: any) => d.id),
+            requested_advance_months: 0,
+            reviewed_by: staff?.id || 'staff-id',
+            reviewed_at: new Date(Date.now() - 3600000 * 60).toISOString(),
+            review_notes: 'Cheque bounced. Contact bank for details.',
+          });
+        }
+        
+        setPaymentRequests(demoRequests);
+        localStorage.setItem(STORAGE_KEYS.PAYMENT_REQUESTS, JSON.stringify(demoRequests));
+      }
       
       const sessionUser = sessionStorage.getItem(STORAGE_KEYS.CURRENT_USER_SESSION);
       if (sessionUser) {
@@ -625,6 +716,79 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAdditionalFeeRules(seedSpecialFees);
     setTreasuryTransactions(seedTreasuryTransactions);
 
+    // Seeding payment requests for fresh seed flow
+    const seedRequests = [];
+    if (adv1) {
+      seedRequests.push({
+        id: 'REQ-000001',
+        advocate_id: adv1.id,
+        submitted_date: new Date(Date.now() - 3600000 * 24).toISOString(),
+        payment_mode: 'UPI' as PaymentMode,
+        amount: 200,
+        reference_number: 'UPI9988776655',
+        proof_attachment_url: 'https://example.com/receipt-proof-1.pdf',
+        original_file_name: 'receipt-proof-1.pdf',
+        mime_type: 'application/pdf',
+        remarks: 'Paid via GPay last evening.',
+        status: 'PENDING' as const,
+        requested_due_ids: seedDues
+          .filter((d: any) => d.advocate_id === adv1.id && d.status === 'UNPAID')
+          .slice(0, 2)
+          .map((d: any) => d.id),
+        requested_advance_months: 0,
+      });
+      
+      const sTx = seedTransactions.find((t: any) => t.advocate_id === adv1.id);
+      seedRequests.push({
+        id: 'REQ-000002',
+        advocate_id: adv1.id,
+        submitted_date: new Date(Date.now() - 3600000 * 48).toISOString(),
+        payment_mode: 'BANK_TRANSFER' as PaymentMode,
+        amount: 300,
+        reference_number: 'TXN8877665544',
+        proof_attachment_url: 'https://example.com/screenshot.jpg',
+        original_file_name: 'screenshot.jpg',
+        mime_type: 'image/jpeg',
+        remarks: 'IMPS transfer from State Bank of India.',
+        status: 'APPROVED' as const,
+        requested_due_ids: [],
+        requested_advance_months: 3,
+        approved_due_ids: [],
+        approved_advance_months: 3,
+        reviewed_by: staffUser.id,
+        reviewed_at: new Date(Date.now() - 3600000 * 40).toISOString(),
+        review_notes: 'Verified transfer from SBI statements.',
+        generated_transaction_id: sTx?.id || 1,
+        generated_receipt_number: sTx?.receipt_no || 'HBA-2026-000001',
+      });
+    }
+    
+    if (adv3) {
+      seedRequests.push({
+        id: 'REQ-000003',
+        advocate_id: adv3.id,
+        submitted_date: new Date(Date.now() - 3600000 * 72).toISOString(),
+        payment_mode: 'CHEQUE' as PaymentMode,
+        amount: 500,
+        reference_number: 'CHQ123456',
+        proof_attachment_url: 'https://example.com/cheque-copy.png',
+        original_file_name: 'cheque-copy.png',
+        mime_type: 'image/png',
+        remarks: 'Cheque dropped in dropbox.',
+        status: 'REJECTED' as const,
+        requested_due_ids: seedDues
+          .filter((d: any) => d.advocate_id === adv3.id && d.status === 'UNPAID')
+          .slice(0, 1)
+          .map((d: any) => d.id),
+        requested_advance_months: 0,
+        reviewed_by: staffUser.id,
+        reviewed_at: new Date(Date.now() - 3600000 * 60).toISOString(),
+        review_notes: 'Cheque bounced. Contact bank for details.',
+      });
+    }
+    
+    setPaymentRequests(seedRequests);
+
     // Save to LocalStorage
     localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
     localStorage.setItem(STORAGE_KEYS.SCHEMA_VERSION, currentSchemaVersion);
@@ -639,6 +803,7 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem(STORAGE_KEYS.OFFICE_TERMS, JSON.stringify(seedTerms));
     localStorage.setItem(STORAGE_KEYS.ADDITIONAL_FEE_RULES, JSON.stringify(seedSpecialFees));
     localStorage.setItem(STORAGE_KEYS.TREASURY_TRANSACTIONS, JSON.stringify(seedTreasuryTransactions));
+    localStorage.setItem(STORAGE_KEYS.PAYMENT_REQUESTS, JSON.stringify(seedRequests));
   };
 
   const saveToStorage = (key: string, data: any) => {
@@ -1239,6 +1404,8 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setAdditionalFeeRules,
         treasuryTransactions,
         setTreasuryTransactions,
+        paymentRequests,
+        setPaymentRequests,
         login,
         logout,
         registerAdvocate,

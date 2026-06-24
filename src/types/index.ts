@@ -79,7 +79,11 @@ export type ActivityLogType =
   | 'PASSWORD_RESET'
   | 'BULK_IMPORTED'
   | 'SETTINGS_CHANGED'
-  | 'TREASURY_TRANSACTION_CREATED';
+  | 'TREASURY_TRANSACTION_CREATED'
+  | 'PAYMENT_REQUEST_SUBMITTED'
+  | 'PAYMENT_REQUEST_APPROVED'
+  | 'PAYMENT_REQUEST_REJECTED'
+  | 'PAYMENT_REQUEST_CANCELLED';
 
 export interface ActivityLog {
   id: number;
@@ -162,4 +166,37 @@ export interface TreasuryTransaction {
   reference_number?: string; // Optional
   created_by: string; // Creator username or name
   created_at: string; // ISO timestamp
+}
+
+export type PaymentRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface PaymentRequest {
+  id: string;
+  advocate_id: string;
+  submitted_date: string; // ISO datetime string
+  payment_mode: PaymentMode;
+  amount: number;
+  reference_number: string;
+  proof_attachment_url?: string;
+  original_file_name?: string;
+  mime_type?: string;
+  remarks?: string;
+  status: PaymentRequestStatus;
+  
+  // Advocate requested allocation
+  requested_due_ids: number[];
+  requested_advance_months: number;
+
+  // Admin approved allocation
+  approved_due_ids?: number[];
+  approved_advance_months?: number;
+
+  // Audit and verification details
+  reviewed_by?: string; // User ID
+  reviewed_at?: string; // ISO datetime string
+  review_notes?: string;
+  
+  // Linked checkout transaction details (once approved)
+  generated_transaction_id?: number; // PaymentTransaction ID
+  generated_receipt_number?: string; // HBA-YYYY-00000X receipt number
 }
