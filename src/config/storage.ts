@@ -1,0 +1,16 @@
+export const STORAGE_KEYS = {
+  USERS: 'jd_users',
+  ADVOCATES: 'jd_advocates',
+  DUES: 'jd_dues',
+  TRANSACTIONS: 'jd_transactions',
+  PAYMENT_LINES: 'jd_payment_lines',
+  ACTIVITY_LOGS: 'jd_activity_logs',
+  SETTINGS: 'jd_settings',
+  INITIALIZED: 'jd_initialized',
+  SCHEMA_VERSION: 'jd_schema_version',
+  CURRENT_USER_SESSION: 'jd_current_user',
+  OFFICE_POSITIONS: 'jd_office_positions',
+  OFFICE_TERMS: 'jd_office_terms',
+  ADDITIONAL_FEE_RULES: 'jd_additional_fee_rules',
+  TREASURY_TRANSACTIONS: 'jd_treasury_transactions',
+};

@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --font-heading: "Outfit", sans-serif;
+  --font-sans: "Inter", sans-serif;
+  
+  /* Primary & Accent Color definitions mapping to design guidelines */
+  --color-brand-primary: #0f172a; /* Slate 900 */
+  --color-brand-secondary: #059669; /* Emerald 600 */
+  --color-brand-alert: #e11d48; /* Rose 600 */
+  --color-brand-warning: #d97706; /* Amber 600 */
+}
+
+/* Custom Base resets */
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased font-sans;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+}
