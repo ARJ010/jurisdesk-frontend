@@ -78,7 +78,8 @@ export const PersonalPayments: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      <div className="space-y-6 print:hidden">
+        {/* Page Header */}
       <div>
         <h1 className="text-xl font-bold font-heading text-slate-900">
           Personal Ledger & Payments
@@ -194,6 +195,7 @@ export const PersonalPayments: React.FC = () => {
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
 
       {/* Receipt Voucher Details Modal */}
@@ -349,20 +351,19 @@ export const PersonalPayments: React.FC = () => {
           {/* Global Print Media styles injecting */}
           <style dangerouslySetInnerHTML={{ __html: `
             @media print {
-              body * {
-                visibility: hidden !important;
+              @page {
+                size: auto;
+                margin: 20mm;
               }
-              #printable-receipt, #printable-receipt * {
-                visibility: visible !important;
+              body {
+                background: white !important;
               }
               #printable-receipt {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
                 width: 100% !important;
-                margin: 0 !important;
-                padding: 0.5in !important;
-                border: 2px solid #000 !important;
+                max-width: 100% !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                border: 2px solid #1e293b !important;
                 box-shadow: none !important;
                 background: white !important;
               }

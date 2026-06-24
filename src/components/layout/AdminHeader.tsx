@@ -56,7 +56,7 @@ export const AdminHeader: React.FC = () => {
   if (!currentUser) return null;
 
   return (
-    <header className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0 shadow-sm relative z-40">
+    <header className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0 shadow-sm relative z-40 print:hidden">
       {/* Search Input Container */}
       <div className="w-96 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />

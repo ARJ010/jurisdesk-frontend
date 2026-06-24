@@ -179,7 +179,8 @@ export const AdvocateDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      <div className="space-y-6 print:hidden">
+        {/* Page Header */}
       <div>
         <h1 className="text-xl font-bold font-heading text-slate-900">
           Member Workspace
@@ -432,6 +433,7 @@ export const AdvocateDashboard: React.FC = () => {
         </div>
 
       </div>
+      </div>
 
       {/* A4 Printable Certificate Modal */}
       {isCertModalOpen && eligibility.eligible && (
@@ -547,23 +549,27 @@ export const AdvocateDashboard: React.FC = () => {
           {/* Global Print Media styles injecting */}
           <style dangerouslySetInnerHTML={{ __html: `
             @media print {
-              body * {
-                visibility: hidden !important;
+              @page {
+                size: A4 portrait;
+                margin: 0;
               }
-              #printable-certificate, #printable-certificate * {
-                visibility: visible !important;
+              body {
+                background: white !important;
               }
               #printable-certificate {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                height: 100% !important;
-                margin: 0 !important;
-                padding: 1.5in !important;
-                border: none !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                box-sizing: border-box !important;
+                margin: 0 auto !important;
+                padding: 24mm !important;
+                border: 8px double #1e293b !important;
                 box-shadow: none !important;
                 background: white !important;
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
               }
             }
           `}} />

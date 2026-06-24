@@ -298,7 +298,8 @@ export const CollectionsLedger: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      <div className="space-y-6 print:hidden">
+        {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold font-heading text-slate-900">
@@ -766,11 +767,12 @@ export const CollectionsLedger: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* Printable Receipt Voucher Modal */}
       {selectedReceipt && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl p-6 relative flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl p-6 relative flex flex-col max-h-[90vh] print:shadow-none print:border-none print:w-full print:max-w-none print:max-h-none print:static print:overflow-visible print:p-0">
             {/* Header / Actions */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
               <h3 className="text-sm font-bold font-heading text-slate-900 flex items-center gap-2">
@@ -1040,37 +1042,31 @@ export const CollectionsLedger: React.FC = () => {
       {/* Global print styles injection */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          body * {
-            visibility: hidden !important;
+          @page {
+            size: A4 portrait;
+            margin: 15mm;
+          }
+          body {
+            background: white !important;
           }
           ${selectedReceipt ? `
-            #printable-voucher, #printable-voucher * {
-              visibility: visible !important;
-            }
             #printable-voucher {
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
+              display: block !important;
               width: 100% !important;
+              max-width: 100% !important;
               margin: 0 !important;
-              padding: 0.5in !important;
+              padding: 0 !important;
               background: white !important;
               box-shadow: none !important;
-              display: block !important;
             }
           ` : `
-            #printable-ledger, #printable-ledger * {
-              visibility: visible !important;
-            }
             #printable-ledger {
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
-              width: 100% !important;
-              margin: 0 !important;
-              padding: 0.2in !important;
-              background: white !important;
               display: block !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: white !important;
             }
           `}
         }

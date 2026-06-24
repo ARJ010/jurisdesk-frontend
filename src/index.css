@@ -21,3 +21,46 @@
     @apply font-heading tracking-tight;
   }
 }
+
+/* Global Print Media Styles */
+@media print {
+  /* Hide standard UI layout and controls globally */
+  nav, 
+  aside, 
+  header, 
+  footer, 
+  button,
+  .print-hidden,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Reset body margins and dimensions for clean printing */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Reset layout flex/grid wrappers to allow natural printing flow */
+  #root, 
+  #root > div, 
+  main {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+}
+

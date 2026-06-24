@@ -364,8 +364,8 @@ export const AdvocateWorkspace: React.FC = () => {
     <div className="space-y-6">
       {/* Printable Receipt Modal Layer (Styled for media print to isolate voucher layout) */}
       {activeReceipt && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 print:p-0 print:bg-white print:static">
-          <Card className="w-full max-w-2xl bg-white shadow-2xl relative print:shadow-none print:border-none print:w-full print:max-w-none">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 print:p-0 print:bg-white print:static print:overflow-visible">
+          <Card className="w-full max-w-2xl bg-white shadow-2xl relative print:shadow-none print:border-none print:w-full print:max-w-none print:static print:overflow-visible print:max-h-none">
             {/* Close button - hidden on print */}
             <button
               onClick={() => setActiveReceipt(null)}
@@ -485,10 +485,24 @@ export const AdvocateWorkspace: React.FC = () => {
               </Button>
             </CardFooter>
           </Card>
+
+          {/* Global print styles injection */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              @page {
+                size: auto;
+                margin: 20mm;
+              }
+              body {
+                background: white !important;
+              }
+            }
+          `}} />
         </div>
       )}
 
-      {/* Workspace Back Header */}
+      <div className="space-y-6 print:hidden">
+        {/* Workspace Back Header */}
       <div className="flex items-center gap-4 print:hidden">
         <Button
           variant="outline"
@@ -1387,6 +1401,7 @@ export const AdvocateWorkspace: React.FC = () => {
             </CardContent>
           </Card>
         )}
+      </div>
       </div>
     </div>
   );

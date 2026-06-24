@@ -35,7 +35,7 @@ export const AdvocateLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col w-full">
       {/* Top Navbar */}
-      <nav className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0 shadow-sm relative z-40">
+      <nav className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0 shadow-sm relative z-40 print:hidden">
         {/* Left Side: Brand Logo */}
         <div className="flex items-center gap-2.5">
           <Scale className="h-6 w-6 text-emerald-500" />

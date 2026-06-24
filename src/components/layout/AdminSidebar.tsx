@@ -50,7 +50,7 @@ export const AdminSidebar: React.FC = () => {
   ];
 
   return (
-    <div className="w-64 bg-slate-900 text-slate-300 flex flex-col min-h-screen border-r border-slate-800 shrink-0">
+    <div className="w-64 bg-slate-900 text-slate-300 flex flex-col min-h-screen border-r border-slate-800 shrink-0 print:hidden">
       {/* Brand Header */}
       <div className="h-16 px-6 flex items-center border-b border-slate-800 gap-2.5">
         <Scale className="h-6 w-6 text-emerald-500" />
