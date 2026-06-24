@@ -362,7 +362,8 @@ export const PersonalPayments: React.FC = () => {
                 width: 100% !important;
                 max-width: 100% !important;
                 margin: 0 auto !important;
-                padding: 0 !important;
+                padding: 24px !important;
+                box-sizing: border-box !important;
                 border: 2px solid #1e293b !important;
                 box-shadow: none !important;
                 background: white !important;

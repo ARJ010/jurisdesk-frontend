@@ -374,7 +374,7 @@ export const AdvocateWorkspace: React.FC = () => {
               <X className="h-5 w-5" />
             </button>
 
-            <CardContent className="p-8 print:p-0 space-y-6">
+            <CardContent className="p-8 print:p-6 space-y-6">
               {/* Receipt Header */}
               <div className="text-center border-b border-slate-200 pb-4">
                 <Scale className="h-8 w-8 mx-auto text-emerald-600 mb-2" />
