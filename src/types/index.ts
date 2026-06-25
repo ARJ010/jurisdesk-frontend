@@ -8,6 +8,8 @@ export interface User {
   groups: ('Advocate' | 'Office Staff' | 'Admin Advocate')[];
   user_permissions: string[];
   additional_permissions?: string[];
+  password?: string;
+  must_change_password?: boolean;
 }
 
 export type AdvocateStatus = 'ACTIVE' | 'SUSPENDED' | 'DECEASED' | 'RETIRED';
@@ -26,6 +28,20 @@ export interface Advocate {
   picture_url: string | null;
   status: AdvocateStatus;
   internal_notes: string | null;
+}
+
+export interface EmployeeProfile {
+  id: string;
+  user_id: string;
+  employee_code: string;
+  full_name: string;
+  designation: string;
+  mobile: string;
+  email: string;
+  joining_date: string;
+  remarks?: string;
+  is_active: boolean;
+  status: 'ACTIVE' | 'SUSPENDED' | 'RETIRED';
 }
 
 export type MonthlyDueStatus = 'UNPAID' | 'PAID' | 'WAIVED';
@@ -83,7 +99,15 @@ export type ActivityLogType =
   | 'PAYMENT_REQUEST_SUBMITTED'
   | 'PAYMENT_REQUEST_APPROVED'
   | 'PAYMENT_REQUEST_REJECTED'
-  | 'PAYMENT_REQUEST_CANCELLED';
+  | 'PAYMENT_REQUEST_CANCELLED'
+  | 'ID_CARD_PREVIEWED'
+  | 'ID_CARD_PRINTED'
+  | 'EMPLOYEE_CREATED'
+  | 'EMPLOYEE_UPDATED'
+  | 'EMPLOYEE_ENABLED'
+  | 'EMPLOYEE_DISABLED'
+  | 'EMPLOYEE_RETIRED'
+  | 'EMPLOYEE_PERMISSIONS_UPDATED';
 
 export interface ActivityLog {
   id: number;
@@ -122,6 +146,8 @@ export interface AssociationSettings {
   onam_contribution_month: string; // MM
   accounting_start_date: string; // YYYY-MM-DD
   bank_account_details: BankAccountDetails;
+  primary_theme_color?: string;
+  card_validity_years?: number;
 }
 
 export interface OfficePosition {

@@ -13,6 +13,7 @@ import { CollectionsLedger } from '@/pages/admin/reports/CollectionsLedger';
 import { OutstandingLedger } from '@/pages/admin/reports/OutstandingLedger';
 import { SettingsPage } from '@/pages/admin/settings/SettingsPage';
 import { PaymentRequestsPage } from '@/pages/admin/payment-requests/PaymentRequestsPage';
+import { StaffDirectory } from '@/pages/admin/staff/StaffDirectory';
 import { ErrorBoundary } from '@/components/system/ErrorBoundary';
 import { ROUTES } from '@/config/routes';
 
@@ -64,6 +65,14 @@ const router = createBrowserRouter([
       {
         path: 'advocates/:id',
         element: <AdvocateWorkspace />,
+      },
+      {
+        path: 'staff',
+        element: (
+          <ProtectedRoute requiredPermission="manage_settings">
+            <StaffDirectory />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'ledgers/collections',

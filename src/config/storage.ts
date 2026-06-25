@@ -14,4 +14,5 @@ export const STORAGE_KEYS = {
   ADDITIONAL_FEE_RULES: 'jd_additional_fee_rules',
   TREASURY_TRANSACTIONS: 'jd_treasury_transactions',
   PAYMENT_REQUESTS: 'jd_payment_requests',
+  EMPLOYEE_PROFILES: 'jd_employee_profiles',
 };

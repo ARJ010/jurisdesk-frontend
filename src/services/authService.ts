@@ -12,7 +12,8 @@ export const authenticateUser = async (
   await new Promise((resolve) => setTimeout(resolve, 500));
 
   const user = users.find((u) => u.username === username);
-  if (user && password === 'pass@123') {
+  const expectedPassword = user?.password || 'pass@123';
+  if (user && password === expectedPassword) {
     if (!user.is_active) {
       return null;
     }
@@ -22,9 +23,11 @@ export const authenticateUser = async (
 };
 
 export const verifyPassword = async (
-  password: string
+  password: string,
+  currentUser?: User | null
 ): Promise<boolean> => {
   // Simulated delay to mimic network latency
   await new Promise((resolve) => setTimeout(resolve, 300));
-  return password === 'pass@123';
+  const expected = currentUser?.password || 'pass@123';
+  return password === expected;
 };

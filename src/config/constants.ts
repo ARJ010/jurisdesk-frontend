@@ -29,4 +29,6 @@ export const DEFAULT_ASSOCIATION_SETTINGS = {
     ifsc: 'SBIN0001234',
     upi_id: 'hosdurgbar@sbi',
   },
+  primary_theme_color: '#7c3aed',
+  card_validity_years: 3,
 };

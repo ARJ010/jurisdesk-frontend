@@ -6,6 +6,7 @@ import type {
   PaymentTransaction,
   PaymentLine,
   ActivityLog,
+  ActivityLogType,
   AssociationSettings,
   PaymentMode,
   MonthlyDueStatus,
@@ -14,6 +15,7 @@ import type {
   AdditionalFeeRule,
   TreasuryTransaction,
   PaymentRequest,
+  EmployeeProfile,
 } from '../types';
 import { STORAGE_KEYS } from '@/config/storage';
 import { SCHEMA_VERSION, DEFAULT_ASSOCIATION_SETTINGS } from '@/config/constants';
@@ -47,6 +49,8 @@ interface MockDBContextProps {
   setTreasuryTransactions: React.Dispatch<React.SetStateAction<TreasuryTransaction[]>>;
   paymentRequests: PaymentRequest[];
   setPaymentRequests: React.Dispatch<React.SetStateAction<PaymentRequest[]>>;
+  employeeProfiles: EmployeeProfile[];
+  setEmployeeProfiles: React.Dispatch<React.SetStateAction<EmployeeProfile[]>>;
 
   login: (username: string, password: string) => Promise<User | null>;
   logout: () => void;
@@ -68,6 +72,8 @@ interface MockDBContextProps {
   getAdvocateTimeline: (advocateId: string) => ActivityLog[];
   getOperationalNotifications: () => { id: string; type: 'arrears' | 'billing' | 'compliance' | 'reconciliation'; text: string; link?: string }[];
   isAdvocateEligibleForCertificate: (advocateId: string) => { eligible: boolean; reason: string | null };
+  isAdvocateEligibleForIDCard: (advocateId: string) => { eligible: boolean; reason: string | null };
+  logActivity: (actionType: ActivityLogType, advocateId: string | null, payload?: Record<string, any>) => void;
   updateUser: (userId: string, updatedFields: Partial<User>) => void;
   resetAllData: () => void;
 }
@@ -97,6 +103,7 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [additionalFeeRules, setAdditionalFeeRules] = useState<AdditionalFeeRule[]>([]);
   const [treasuryTransactions, setTreasuryTransactions] = useState<TreasuryTransaction[]>([]);
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
+  const [employeeProfiles, setEmployeeProfiles] = useState<EmployeeProfile[]>([]);
 
   // Load initial data from localStorage or seed
   useEffect(() => {
@@ -225,6 +232,145 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (sessionUser) {
         setCurrentUser(JSON.parse(sessionUser));
       }
+
+      const storedEmployees = getStored(STORAGE_KEYS.EMPLOYEE_PROFILES);
+      if (storedEmployees) {
+        setEmployeeProfiles(JSON.parse(storedEmployees));
+      } else {
+        const currentUsers = JSON.parse(getStored(STORAGE_KEYS.USERS) || '[]');
+        let staff = currentUsers.find((u: any) => u.username === 'staff');
+        
+        let needUserSave = false;
+        if (!staff) {
+          staff = {
+            id: generateUUID(),
+            username: 'staff',
+            email: 'bindu@example.com',
+            first_name: 'Bindu',
+            last_name: 'Rajesh',
+            is_active: true,
+            groups: ['Office Staff'],
+            user_permissions: ['view_operational_dashboard', 'manage_advocates', 'collect_payments', 'view_reports', 'view_personal_profile'],
+            additional_permissions: [],
+          };
+          currentUsers.push(staff);
+          needUserSave = true;
+        }
+
+        let clerk = currentUsers.find((u: any) => u.username === 'clerk');
+        if (!clerk) {
+          clerk = {
+            id: generateUUID(),
+            username: 'clerk',
+            email: 'ramesh@example.com',
+            first_name: 'Ramesh',
+            last_name: 'Kumar',
+            is_active: true,
+            groups: ['Office Staff'],
+            user_permissions: ['view_operational_dashboard', 'manage_advocates', 'collect_payments', 'view_reports', 'view_personal_profile'],
+            additional_permissions: [],
+          };
+          currentUsers.push(clerk);
+          needUserSave = true;
+        }
+
+        let accountant = currentUsers.find((u: any) => u.username === 'accountant');
+        if (!accountant) {
+          accountant = {
+            id: generateUUID(),
+            username: 'accountant',
+            email: 'maya@example.com',
+            first_name: 'Maya',
+            last_name: 'Shaji',
+            is_active: true,
+            groups: ['Office Staff'],
+            user_permissions: ['view_operational_dashboard', 'manage_advocates', 'collect_payments', 'view_reports', 'view_personal_profile'],
+            additional_permissions: [],
+          };
+          currentUsers.push(accountant);
+          needUserSave = true;
+        }
+
+        let receptionist = currentUsers.find((u: any) => u.username === 'receptionist');
+        if (!receptionist) {
+          receptionist = {
+            id: generateUUID(),
+            username: 'receptionist',
+            email: 'aswathi@example.com',
+            first_name: 'Aswathi',
+            last_name: 'Raj',
+            is_active: true,
+            groups: ['Office Staff'],
+            user_permissions: ['view_operational_dashboard', 'manage_advocates', 'collect_payments', 'view_reports', 'view_personal_profile'],
+            additional_permissions: [],
+          };
+          currentUsers.push(receptionist);
+          needUserSave = true;
+        }
+
+        if (needUserSave) {
+          localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(currentUsers));
+          setUsers(currentUsers);
+        }
+
+        const seedEmployees = [
+          {
+            id: generateUUID(),
+            user_id: staff.id,
+            employee_code: 'HBA-EMP-0001',
+            full_name: 'Bindu Rajesh',
+            designation: 'Office Assistant',
+            mobile: '9876543220',
+            email: 'bindu@example.com',
+            joining_date: '2022-04-10',
+            remarks: 'Handles registry bookkeeping operations.',
+            is_active: true,
+            status: 'ACTIVE' as const,
+          },
+          {
+            id: generateUUID(),
+            user_id: clerk.id,
+            employee_code: 'HBA-EMP-0002',
+            full_name: 'Ramesh Kumar',
+            designation: 'Office Clerk',
+            mobile: '9876543221',
+            email: 'ramesh@example.com',
+            joining_date: '2023-01-15',
+            remarks: 'Handles daily document collection.',
+            is_active: true,
+            status: 'ACTIVE' as const,
+          },
+          {
+            id: generateUUID(),
+            user_id: accountant.id,
+            employee_code: 'HBA-EMP-0003',
+            full_name: 'Maya Shaji',
+            designation: 'Accountant',
+            mobile: '9876543222',
+            email: 'maya@example.com',
+            joining_date: '2021-08-01',
+            remarks: 'Oversees bank reconciliations.',
+            is_active: true,
+            status: 'ACTIVE' as const,
+          },
+          {
+            id: generateUUID(),
+            user_id: receptionist.id,
+            employee_code: 'HBA-EMP-0004',
+            full_name: 'Aswathi Raj',
+            designation: 'Receptionist',
+            mobile: '9876543223',
+            email: 'aswathi@example.com',
+            joining_date: '2024-02-20',
+            remarks: 'Manages advocate inquiries.',
+            is_active: true,
+            status: 'ACTIVE' as const,
+          },
+        ];
+
+        localStorage.setItem(STORAGE_KEYS.EMPLOYEE_PROFILES, JSON.stringify(seedEmployees));
+        setEmployeeProfiles(seedEmployees);
+      }
       return;
     }
 
@@ -301,7 +447,43 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       additional_permissions: [],
     };
 
-    const seedUsers = [adminUser, staffUser, adv1User, adv2User, adv3User];
+    const clerkUser: User = {
+      id: generateUUID(),
+      username: 'clerk',
+      email: 'ramesh@example.com',
+      first_name: 'Ramesh',
+      last_name: 'Kumar',
+      is_active: true,
+      groups: ['Office Staff'],
+      user_permissions: ['view_operational_dashboard', 'manage_advocates', 'collect_payments', 'view_reports', 'view_personal_profile'],
+      additional_permissions: [],
+    };
+
+    const accountantUser: User = {
+      id: generateUUID(),
+      username: 'accountant',
+      email: 'maya@example.com',
+      first_name: 'Maya',
+      last_name: 'Shaji',
+      is_active: true,
+      groups: ['Office Staff'],
+      user_permissions: ['view_operational_dashboard', 'manage_advocates', 'collect_payments', 'view_reports', 'view_personal_profile'],
+      additional_permissions: [],
+    };
+
+    const receptionistUser: User = {
+      id: generateUUID(),
+      username: 'receptionist',
+      email: 'aswathi@example.com',
+      first_name: 'Aswathi',
+      last_name: 'Raj',
+      is_active: true,
+      groups: ['Office Staff'],
+      user_permissions: ['view_operational_dashboard', 'manage_advocates', 'collect_payments', 'view_reports', 'view_personal_profile'],
+      additional_permissions: [],
+    };
+
+    const seedUsers = [adminUser, staffUser, clerkUser, accountantUser, receptionistUser, adv1User, adv2User, adv3User];
 
     // Advocate Seeds
     const advAdmin: Advocate = {
@@ -792,7 +974,62 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       });
     }
     
-    setPaymentRequests(seedRequests);
+    const seedEmployees = [
+      {
+        id: generateUUID(),
+        user_id: staffUser.id,
+        employee_code: 'HBA-EMP-0001',
+        full_name: 'Bindu Rajesh',
+        designation: 'Office Assistant',
+        mobile: '9876543220',
+        email: 'bindu@example.com',
+        joining_date: '2022-04-10',
+        remarks: 'Handles registry bookkeeping operations.',
+        is_active: true,
+        status: 'ACTIVE' as const,
+      },
+      {
+        id: generateUUID(),
+        user_id: clerkUser.id,
+        employee_code: 'HBA-EMP-0002',
+        full_name: 'Ramesh Kumar',
+        designation: 'Office Clerk',
+        mobile: '9876543221',
+        email: 'ramesh@example.com',
+        joining_date: '2023-01-15',
+        remarks: 'Handles daily document collection.',
+        is_active: true,
+        status: 'ACTIVE' as const,
+      },
+      {
+        id: generateUUID(),
+        user_id: accountantUser.id,
+        employee_code: 'HBA-EMP-0003',
+        full_name: 'Maya Shaji',
+        designation: 'Accountant',
+        mobile: '9876543222',
+        email: 'maya@example.com',
+        joining_date: '2021-08-01',
+        remarks: 'Oversees bank reconciliations.',
+        is_active: true,
+        status: 'ACTIVE' as const,
+      },
+      {
+        id: generateUUID(),
+        user_id: receptionistUser.id,
+        employee_code: 'HBA-EMP-0004',
+        full_name: 'Aswathi Raj',
+        designation: 'Receptionist',
+        mobile: '9876543223',
+        email: 'aswathi@example.com',
+        joining_date: '2024-02-20',
+        remarks: 'Manages advocate inquiries.',
+        is_active: true,
+        status: 'ACTIVE' as const,
+      },
+    ];
+
+    setEmployeeProfiles(seedEmployees);
 
     // Save to LocalStorage
     localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
@@ -809,6 +1046,7 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem(STORAGE_KEYS.ADDITIONAL_FEE_RULES, JSON.stringify(seedSpecialFees));
     localStorage.setItem(STORAGE_KEYS.TREASURY_TRANSACTIONS, JSON.stringify(seedTreasuryTransactions));
     localStorage.setItem(STORAGE_KEYS.PAYMENT_REQUESTS, JSON.stringify(seedRequests));
+    localStorage.setItem(STORAGE_KEYS.EMPLOYEE_PROFILES, JSON.stringify(seedEmployees));
   };
 
   const saveToStorage = (key: string, data: any) => {
@@ -1321,6 +1559,51 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { eligible: true, reason: null };
   };
 
+  const isAdvocateEligibleForIDCard = (advocateId: string): { eligible: boolean; reason: string | null } => {
+    const adv = advocates.find((a) => a.id === advocateId);
+    if (!adv) {
+      return { eligible: false, reason: 'Advocate profile not found.' };
+    }
+
+    // Condition 1: Advocate Status == ACTIVE
+    if (adv.status !== 'ACTIVE') {
+      const statusText = adv.status.charAt(0) + adv.status.slice(1).toLowerCase();
+      return { eligible: false, reason: `Advocate status is currently ${statusText}. Only ACTIVE members are eligible.` };
+    }
+
+    // Condition 2: Advocate account is active
+    const userObj = users.find((u) => u.id === adv.user_id);
+    if (!userObj || !userObj.is_active) {
+      return { eligible: false, reason: 'Advocate user account is currently suspended/inactive.' };
+    }
+
+    // Condition 3: Enrolment Number exists
+    if (!adv.enrolment_no || adv.enrolment_no.trim() === '') {
+      return { eligible: false, reason: 'Enrolment number is missing from registry metadata.' };
+    }
+
+    // Condition 4: Joined Date exists
+    if (!adv.joined_date || adv.joined_date.trim() === '') {
+      return { eligible: false, reason: 'Membership joined date is missing from registry metadata.' };
+    }
+
+    return { eligible: true, reason: null };
+  };
+
+  const logActivity = (actionType: ActivityLogType, advocateId: string | null, payload: Record<string, any> = {}) => {
+    const newLog: ActivityLog = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      timestamp: new Date().toISOString(),
+      advocate_id: advocateId,
+      action_type: actionType,
+      performed_by_id: currentUser?.id || 'anonymous',
+      payload,
+    };
+    const updated = [newLog, ...activityLogs];
+    setActivityLogs(updated);
+    localStorage.setItem(STORAGE_KEYS.ACTIVITY_LOGS, JSON.stringify(updated));
+  };
+
   const updateUser = (userId: string, updatedFields: Partial<User>) => {
     const userIndex = users.findIndex((u) => u.id === userId);
     if (userIndex === -1) return;
@@ -1411,6 +1694,8 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setTreasuryTransactions,
         paymentRequests,
         setPaymentRequests,
+        employeeProfiles,
+        setEmployeeProfiles,
         login,
         logout,
         registerAdvocate,
@@ -1424,6 +1709,8 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         getAdvocateTimeline,
         getOperationalNotifications,
         isAdvocateEligibleForCertificate,
+        isAdvocateEligibleForIDCard,
+        logActivity,
         updateUser,
         resetAllData,
       }}

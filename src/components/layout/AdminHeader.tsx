@@ -8,68 +8,284 @@ import { ROUTES } from '@/config/routes';
 import { PERMISSIONS } from '@/config/permissions';
 
 export const AdminHeader: React.FC = () => {
-  const { currentUser, logout, advocates } = useMockDB();
+  const { currentUser, logout, advocates, users, employeeProfiles } = useMockDB();
   const { getOperationalNotifications } = useReportService();
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
-  const notificationRef = useRef<HTMLDivElement>(null);
-  const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
   const alerts = getOperationalNotifications();
 
-  // Find if current user has advocate profile
-  const advocate = advocates.find((a) => a.user_id === currentUser?.id);
-  const hasAdvocateProfile = !!advocate;
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  // Search states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showResults, setShowResults] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  const searchRef = useRef<HTMLInputElement>(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // Keyboard shortcut listener for focusing search (/)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.key === '/' &&
-        document.activeElement?.tagName !== 'INPUT' &&
-        document.activeElement?.tagName !== 'TEXTAREA'
-      ) {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === '/' && document.activeElement !== searchRef.current) {
         e.preventDefault();
         searchRef.current?.focus();
+        setShowResults(true);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
-  // Click outside listener for closing panels
+  // Click outside to close menus
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (notificationRef.current && !notificationRef.current.contains(e.target as Node)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target as Node)
+      ) {
         setShowNotifications(false);
       }
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node)
+      ) {
         setShowProfileMenu(false);
+      }
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowResults(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Perform search matching
+  const matchedAdvocates = searchQuery.trim() ? advocates
+    .filter((a) => {
+      const u = users.find((usr) => usr.id === a.user_id);
+      const name = u ? `${u.first_name} ${u.last_name}` : '';
+      return (
+        name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.enrolment_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.mobile_number.includes(searchQuery)
+      );
+    })
+    .slice(0, 5)
+    .map((a) => {
+      const u = users.find((usr) => usr.id === a.user_id);
+      return {
+        type: 'ADVOCATE' as const,
+        id: a.id,
+        title: u ? `${u.first_name} ${u.last_name}` : 'Unknown Advocate',
+        subtitle: `Enrolment: ${a.enrolment_no} | Status: ${a.status}`,
+        badge: 'Advocate',
+        url: `/admin/advocates/${a.id}`,
+      };
+    }) : [];
+
+  const matchedEmployees = searchQuery.trim() ? employeeProfiles
+    .filter((e) => {
+      return (
+        e.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.employee_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.designation.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        e.mobile.includes(searchQuery)
+      );
+    })
+    .slice(0, 5)
+    .map((e) => ({
+      type: 'EMPLOYEE' as const,
+      id: e.id,
+      title: e.full_name,
+      subtitle: `Code: ${e.employee_code} | Designation: ${e.designation}`,
+      badge: 'Staff',
+      url: `/admin/staff?id=${e.id}`,
+    })) : [];
+
+  const matchedUsers = searchQuery.trim() ? users
+    .filter((u) => {
+      const isAdvocate = advocates.some((a) => a.user_id === u.id);
+      const isEmployee = employeeProfiles.some((e) => e.user_id === u.id);
+      if (isAdvocate || isEmployee) return false;
+      return (
+        u.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        `${u.first_name} ${u.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        u.email.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    })
+    .slice(0, 5)
+    .map((u) => ({
+      type: 'USER' as const,
+      id: u.id,
+      title: `${u.first_name} ${u.last_name}`,
+      subtitle: `Username: ${u.username} | Group: ${u.groups.join(', ') || 'None'}`,
+      badge: 'User',
+      url: `/admin/settings?tab=staff&user=${u.id}`,
+    })) : [];
+
+  const allResults = [...matchedAdvocates, ...matchedEmployees, ...matchedUsers];
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (allResults.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % allResults.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev - 1 + allResults.length) % allResults.length);
+    } else if (e.key === 'Escape') {
+      setShowResults(false);
+      searchRef.current?.blur();
+    } else if (e.key === 'Enter') {
+      if (activeIndex >= 0 && activeIndex < allResults.length) {
+        e.preventDefault();
+        const selected = allResults[activeIndex];
+        navigate(selected.url);
+        setShowResults(false);
+        setSearchQuery('');
+        setActiveIndex(-1);
+      }
+    }
+  };
+
+  const handleResultClick = (url: string) => {
+    navigate(url);
+    setShowResults(false);
+    setSearchQuery('');
+    setActiveIndex(-1);
+  };
+
+  const hasAdvocateProfile = advocates.some((a) => a.user_id === currentUser?.id);
+  const advocate = advocates.find((a) => a.user_id === currentUser?.id);
+
   if (!currentUser) return null;
 
   return (
     <header className="h-16 border-b border-slate-200 bg-white px-6 flex items-center justify-between shrink-0 shadow-sm relative z-40 print:hidden">
       {/* Search Input Container */}
-      <div className="w-96 relative">
+      <div className="w-96 relative" ref={searchContainerRef}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
         <input
           ref={searchRef}
           id="global-search"
           type="text"
-          placeholder="Search advocates... (Press / to focus)"
+          placeholder="Search portal... (Press / to focus)"
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setShowResults(true);
+            setActiveIndex(-1);
+          }}
+          onFocus={() => setShowResults(true)}
+          onKeyDown={handleSearchKeyDown}
           className="w-full h-10 pl-10 pr-12 rounded-lg border border-slate-200 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all"
         />
         <kbd className="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded text-[10px] text-slate-400 font-semibold uppercase pointer-events-none">
           /
         </kbd>
+
+        {/* Global Search Results Dropdown */}
+        {showResults && searchQuery.trim() && (
+          <div className="absolute left-0 mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-xl z-55 overflow-hidden max-h-96 flex flex-col">
+            <div className="flex-1 overflow-y-auto divide-y divide-slate-100 text-xs">
+              {allResults.length === 0 ? (
+                <div className="p-4 text-center text-slate-400 italic">
+                  No matching records found.
+                </div>
+              ) : (
+                <>
+                  {matchedAdvocates.length > 0 && (
+                    <div>
+                      <div className="bg-slate-55 px-3 py-1.5 font-bold uppercase tracking-wider text-[9px] text-slate-400">
+                        Advocates
+                      </div>
+                      {matchedAdvocates.map((item, idx) => {
+                        const itemIdx = idx;
+                        const isSelected = itemIdx === activeIndex;
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => handleResultClick(item.url)}
+                            className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${
+                              isSelected ? 'bg-slate-100 font-semibold' : 'hover:bg-slate-50'
+                            }`}
+                          >
+                            <div>
+                              <p className="font-semibold text-slate-800">{item.title}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{item.subtitle}</p>
+                            </div>
+                            <Badge variant="paid">{item.badge}</Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {matchedEmployees.length > 0 && (
+                    <div>
+                      <div className="bg-slate-55 px-3 py-1.5 font-bold uppercase tracking-wider text-[9px] text-slate-400">
+                        Employees
+                      </div>
+                      {matchedEmployees.map((item, idx) => {
+                        const itemIdx = matchedAdvocates.length + idx;
+                        const isSelected = itemIdx === activeIndex;
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => handleResultClick(item.url)}
+                            className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${
+                              isSelected ? 'bg-slate-100 font-semibold' : 'hover:bg-slate-50'
+                            }`}
+                          >
+                            <div>
+                              <p className="font-semibold text-slate-800">{item.title}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{item.subtitle}</p>
+                            </div>
+                            <Badge variant="neutral" className="bg-indigo-50 text-indigo-700 border-indigo-200">{item.badge}</Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {matchedUsers.length > 0 && (
+                    <div>
+                      <div className="bg-slate-55 px-3 py-1.5 font-bold uppercase tracking-wider text-[9px] text-slate-400">
+                        System Users
+                      </div>
+                      {matchedUsers.map((item, idx) => {
+                        const itemIdx = matchedAdvocates.length + matchedEmployees.length + idx;
+                        const isSelected = itemIdx === activeIndex;
+                        return (
+                          <div
+                            key={item.id}
+                            onClick={() => handleResultClick(item.url)}
+                            className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${
+                              isSelected ? 'bg-slate-100 font-semibold' : 'hover:bg-slate-50'
+                            }`}
+                          >
+                            <div>
+                              <p className="font-semibold text-slate-800">{item.title}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5">{item.subtitle}</p>
+                            </div>
+                            <Badge variant="neutral">{item.badge}</Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Action Controls */}
@@ -202,7 +418,7 @@ export const AdminHeader: React.FC = () => {
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium cursor-pointer text-left"
                   >
                     <UserIcon className="h-3.5 w-3.5 text-slate-400" />
-                    My Profile
+                    Edit Profile
                   </button>
                   <button
                     onClick={() => {

@@ -19,7 +19,6 @@ import {
   Info,
   Printer
 } from 'lucide-react';
-import { OfficialDocument } from '@/components/document/OfficialDocument';
 
 export const PaymentRequestsPage: React.FC = () => {
   const { users, advocates, getAdvocateDues, transactions, settings } = useMockDB();
@@ -744,18 +743,44 @@ export const PaymentRequestsPage: React.FC = () => {
             {/* Printable Preview Pane */}
             <div className="flex-1 overflow-y-auto p-6 bg-slate-100 flex justify-center print:bg-white print:p-0 print:overflow-visible">
               
-              <OfficialDocument
-                title="Receipt Voucher"
-                documentId={activeReceipt.receipt_no}
-                date={new Date(activeReceipt.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                place={settings.address.split(',')[1]?.trim() || 'Kanhangad'}
+              {/* Receipt Voucher Sheet */}
+              <div
+                id="printable-receipt"
+                className="bg-white border-2 border-slate-800 p-8 w-full max-w-xl shadow-md flex flex-col justify-between text-slate-800 font-sans print:shadow-none print:border-2 print:p-4"
               >
-                <div className="text-justify text-[13px] leading-loose space-y-6 text-slate-700 font-sans my-auto py-4">
-                  {/* Transaction Meta Details */}
-                  <div className="grid grid-cols-2 gap-y-2 text-xs border-b border-slate-100 pb-4">
+                {/* Header */}
+                <div className="text-center space-y-1 pb-4 border-b border-slate-300">
+                  <h2 className="text-lg font-bold tracking-wide text-slate-900 uppercase">
+                    {settings.association_name}
+                  </h2>
+                  <p className="text-[10px] text-slate-500 font-semibold">
+                    {settings.address}
+                  </p>
+                  <p className="text-[9px] text-slate-400">
+                    Phone: {settings.phone} {settings.email ? `| Email: ${settings.email}` : ''}
+                  </p>
+                </div>
+
+                {/* Sub-Header & Metadata */}
+                <div className="py-4 space-y-4">
+                  <h3 className="text-center text-xs font-bold tracking-wider text-slate-950 uppercase bg-slate-100 py-1.5 rounded">
+                    OFFICIAL RECEIPTS VOUCHER
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-y-2 text-xs">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Receipt No</span>
+                      <span className="font-bold text-slate-800 text-sm">{activeReceipt.receipt_no}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Date & Time</span>
+                      <span className="font-semibold text-slate-850">
+                        {new Date(activeReceipt.payment_date).toLocaleString('en-IN')}
+                      </span>
+                    </div>
                     <div>
                       <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Member Name</span>
-                      <span className="font-semibold text-slate-800 text-sm">
+                      <span className="font-semibold text-slate-850">
                         {(() => {
                           const details = getAdvocateDetails(activeReceipt.advocate_id);
                           return details.name;
@@ -764,7 +789,7 @@ export const PaymentRequestsPage: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Enrolment Roll No</span>
-                      <span className="font-semibold text-slate-800 text-sm">
+                      <span className="font-semibold text-slate-850">
                         {(() => {
                           const details = getAdvocateDetails(activeReceipt.advocate_id);
                           return details.enrolment;
@@ -772,38 +797,71 @@ export const PaymentRequestsPage: React.FC = () => {
                       </span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Voucher Total */}
-                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-150 flex justify-between items-center text-xs font-extrabold text-slate-955">
-                    <span className="uppercase tracking-wide">Total Voucher Amount</span>
-                    <span className="text-sm font-extrabold text-emerald-700">₹{activeReceipt.total_amount.toFixed(2)}</span>
+                {/* Voucher Total */}
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-150 flex justify-between items-center text-xs font-extrabold text-slate-955 my-4">
+                  <span className="uppercase tracking-wide">Total Voucher Amount</span>
+                  <span className="text-sm font-extrabold text-emerald-700">₹{activeReceipt.total_amount.toFixed(2)}</span>
+                </div>
+
+                {/* Voucher Remarks */}
+                <div className="py-3 text-[11px] space-y-1.5 border-b border-slate-200">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Payment Mode:</span>
+                    <span className="font-semibold text-slate-800 uppercase">{activeReceipt.payment_mode}</span>
                   </div>
-
-                  {/* Voucher Remarks */}
-                  <div className="py-3 text-[11px] space-y-1.5 border-t border-slate-100">
+                  {activeReceipt.transaction_ref && (
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Payment Mode:</span>
-                      <span className="font-semibold text-slate-800 uppercase">{activeReceipt.payment_mode}</span>
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Transaction Ref:</span>
+                      <span className="font-semibold text-slate-850 font-mono">{activeReceipt.transaction_ref}</span>
                     </div>
-                    {activeReceipt.transaction_ref && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Transaction Ref:</span>
-                        <span className="font-semibold text-slate-850 font-mono">{activeReceipt.transaction_ref}</span>
-                      </div>
-                    )}
-                    {activeReceipt.remarks && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remarks:</span>
-                        <span className="font-semibold text-slate-800">{activeReceipt.remarks}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between border-t border-slate-100 pt-2 mt-2">
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Collected By:</span>
-                      <span className="font-semibold text-slate-800">Staff Administrator</span>
+                  )}
+                  {activeReceipt.remarks && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remarks:</span>
+                      <span className="font-semibold text-slate-800">{activeReceipt.remarks}</span>
                     </div>
+                  )}
+                </div>
+
+                {/* Footer Signatures */}
+                <div className="flex justify-between pt-8 text-center text-[10px]">
+                  <div>
+                    <span className="text-slate-400 block mb-4">Issued By:</span>
+                    <span className="font-semibold text-slate-900 border-t border-slate-300 pt-1 block">Staff Administrator</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 block mb-4">Authorized Signature:</span>
+                    <span className="font-semibold text-slate-900 border-t border-slate-300 pt-1 px-4 block">Treasurer / Cashier</span>
                   </div>
                 </div>
-              </OfficialDocument>
+              </div>
+
+              {/* Print Media style overrides */}
+              <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                  @page {
+                    size: auto;
+                    margin: 20mm;
+                  }
+                  body {
+                    background: white !important;
+                  }
+                  /* Hide non-modal page elements on print (handled globally by index.css, just reset background here) */
+                  #printable-receipt {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    margin: 0 auto !important;
+                    padding: 24px !important;
+                    box-sizing: border-box !important;
+                    border: 2px solid #1e293b !important;
+                    box-shadow: none !important;
+                    background: white !important;
+                  }
+                }
+              `}} />
+
             </div>
           </div>
         </div>

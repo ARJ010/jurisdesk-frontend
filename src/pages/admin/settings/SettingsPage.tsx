@@ -83,11 +83,28 @@ export const SettingsPage: React.FC = () => {
   });
 
   useEffect(() => {
-    const queryTab = new URLSearchParams(window.location.search).get('tab');
+    const params = new URLSearchParams(window.location.search);
+    const queryTab = params.get('tab');
     if (queryTab && ['general', 'financial', 'positions', 'staff'].includes(queryTab)) {
       setActiveTab(queryTab as any);
     }
-  }, [window.location.search]);
+    const queryUser = params.get('user');
+    if (queryUser && users.length > 0) {
+      const match = users.find((u) => u.id === queryUser);
+      if (match) {
+        openManagePrivileges(match);
+        // Clean parameter to prevent re-opening on state changes
+        const newParams = new URLSearchParams(window.location.search);
+        newParams.delete('user');
+        const queryStr = newParams.toString();
+        window.history.replaceState(
+          {},
+          '',
+          `${window.location.pathname}${queryStr ? '?' + queryStr : ''}`
+        );
+      }
+    }
+  }, [window.location.search, users]);
 
   // Success Notification banner state
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
@@ -101,6 +118,8 @@ export const SettingsPage: React.FC = () => {
   const [assocWebsite, setAssocWebsite] = useState('');
   const [assocWatermark, setAssocWatermark] = useState('');
   const [signatures, setSignatures] = useState<SignatureConfig[]>([]);
+  const [assocThemeColor, setAssocThemeColor] = useState('#7c3aed');
+  const [cardValidityYears, setCardValidityYears] = useState<number | string>(3);
 
   // Financial Settings Form States (Monthly base dues)
   const [subFee, setSubFee] = useState(0);
@@ -147,6 +166,8 @@ export const SettingsPage: React.FC = () => {
       setAssocWebsite(settings.website || '');
       setAssocWatermark(settings.watermark_url || '');
       setSignatures(settings.signatures || []);
+      setAssocThemeColor(settings.primary_theme_color || '#7c3aed');
+      setCardValidityYears(settings.card_validity_years !== undefined ? settings.card_validity_years : 3);
 
       setSubFee(settings.monthly_subscription_fee || 0);
       setAccountingStart(settings.accounting_start_date || '2024-01-01');
@@ -173,6 +194,8 @@ export const SettingsPage: React.FC = () => {
       website: assocWebsite || undefined,
       watermark_url: assocWatermark || null,
       signatures: signatures,
+      primary_theme_color: assocThemeColor,
+      card_validity_years: cardValidityYears === '' ? undefined : Number(cardValidityYears),
     };
     updateSettings(newSettings);
     showToast('General configuration updated successfully.');
@@ -507,6 +530,37 @@ export const SettingsPage: React.FC = () => {
                       onChange={(e) => setAssocWebsite(e.target.value)}
                       placeholder="e.g. www.hosdurgbar.org"
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-slate-50/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="font-semibold text-slate-700 block text-xs uppercase tracking-wider text-slate-400">Primary Theme Color</label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="color"
+                        value={assocThemeColor}
+                        onChange={(e) => setAssocThemeColor(e.target.value)}
+                        className="w-9 h-9 p-0.5 border border-slate-200 rounded cursor-pointer shrink-0"
+                      />
+                      <input
+                        type="text"
+                        value={assocThemeColor}
+                        onChange={(e) => setAssocThemeColor(e.target.value)}
+                        placeholder="#7c3aed"
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-slate-50/50 text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-slate-700 block text-xs uppercase tracking-wider text-slate-400">Card Validity Period (Years)</label>
+                    <input
+                      type="number"
+                      value={cardValidityYears}
+                      onChange={(e) => setCardValidityYears(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
+                      placeholder="e.g. 3 (leave blank to display issue date only)"
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-slate-50/50 text-xs"
                     />
                   </div>
                 </div>

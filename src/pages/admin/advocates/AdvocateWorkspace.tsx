@@ -27,9 +27,12 @@ import {
   Printer,
   X,
   CreditCard,
+  Award,
+  Lock,
 } from 'lucide-react';
 import type { PaymentTransaction, PaymentMode } from '@/types';
 import { OfficialDocument } from '@/components/document/OfficialDocument';
+import { OfficialIdentityCard } from '@/components/document/OfficialIdentityCard';
 
 export const AdvocateWorkspace: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +44,9 @@ export const AdvocateWorkspace: React.FC = () => {
     dues,
     paymentLines,
     settings,
+    isAdvocateEligibleForCertificate,
+    isAdvocateEligibleForIDCard,
+    logActivity,
   } = useMockDB();
   const { getAdvocateDueBalance, getAdvocateDues, checkoutBasket, waiveDue } = usePaymentService();
   const { getAdvocateReceipts, getAdvocateTimeline } = useReportService();
@@ -72,6 +78,10 @@ export const AdvocateWorkspace: React.FC = () => {
 
   // Active Receipt Modal state (for previewing printable receipts)
   const [activeReceipt, setActiveReceipt] = useState<PaymentTransaction | null>(null);
+
+  // Credentials / Identity Card Preview modals
+  const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const [isIdCardModalOpen, setIsIdCardModalOpen] = useState(false);
   
   // Profile editing fields state
   const advocate = advocates.find((a) => a.id === id);
@@ -170,6 +180,9 @@ export const AdvocateWorkspace: React.FC = () => {
   const unpaidDues = memberDues.filter((d) => d.status === 'UNPAID');
 
   const showRegistryTab = currentUser.user_permissions.includes('manage_advocates');
+
+  const certEligibility = isAdvocateEligibleForCertificate(advocate.id);
+  const idCardEligibility = isAdvocateEligibleForIDCard(advocate.id);
 
   const tabs: {
     id: 'profile' | 'registry' | 'checkout' | 'ledger' | 'receipts' | 'timeline' | 'security';
@@ -351,6 +364,26 @@ export const AdvocateWorkspace: React.FC = () => {
     window.print();
   };
 
+  const handlePrintCert = () => {
+    if (advocate) {
+      logActivity('CERTIFICATE_GENERATED', advocate.id, { document_type: 'Experience Certificate', performed_by_role: 'admin' });
+    }
+    window.print();
+  };
+
+  const handlePrintIdCard = () => {
+    if (advocate) {
+      logActivity('ID_CARD_PRINTED', advocate.id, { document_type: 'Membership Identity Card', performed_by_role: 'admin' });
+    }
+    window.print();
+  };
+
+  // Generate dynamic certificate ID
+  const certYear = new Date().getFullYear();
+  const advocateIndex = advocate ? advocates.findIndex(a => a.id === advocate.id) : -1;
+  const sequenceNum = advocateIndex !== -1 ? advocateIndex + 1 : 1;
+  const certId = `HBA-EC-${certYear}-${String(sequenceNum).padStart(4, '0')}`;
+
   // Calculate dynamic basket totals
   const totalArrearsAmount = selectedDueIds.reduce((sum, id) => {
     const d = dues.find((due) => due.id === id);
@@ -387,86 +420,248 @@ export const AdvocateWorkspace: React.FC = () => {
             {/* Printable Preview Pane */}
             <div className="flex-1 overflow-y-auto p-6 bg-slate-100 flex justify-center print:bg-white print:p-0 print:overflow-visible">
               
-              <OfficialDocument
-                title="Receipt Voucher"
-                documentId={activeReceipt.receipt_no}
-                date={new Date(activeReceipt.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                place={settings.address.split(',')[1]?.trim() || 'Kanhangad'}
+              {/* Receipt Voucher Sheet */}
+              <div
+                id="printable-receipt"
+                className="bg-white border-2 border-slate-800 p-8 w-full max-w-xl shadow-md flex flex-col justify-between text-slate-800 font-sans print:shadow-none print:border-2 print:p-4"
               >
-                <div className="text-justify text-[13px] leading-loose space-y-6 text-slate-700 font-sans my-auto py-4">
-                  {/* Transaction Meta Details */}
-                  <div className="grid grid-cols-2 gap-y-2 text-xs border-b border-slate-100 pb-4">
+                {/* Header */}
+                <div className="text-center space-y-1 pb-4 border-b border-slate-300">
+                  <h2 className="text-lg font-bold tracking-wide text-slate-900 uppercase">
+                    {settings.association_name}
+                  </h2>
+                  <p className="text-[10px] text-slate-500 font-semibold">
+                    {settings.address}
+                  </p>
+                  <p className="text-[9px] text-slate-400">
+                    Phone: {settings.phone} {settings.email ? `| Email: ${settings.email}` : ''}
+                  </p>
+                </div>
+
+                {/* Sub-Header & Metadata */}
+                <div className="py-4 space-y-4">
+                  <h3 className="text-center text-xs font-bold tracking-wider text-slate-950 uppercase bg-slate-100 py-1.5 rounded">
+                    OFFICIAL RECEIPTS VOUCHER
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-y-2 text-xs">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Receipt No</span>
+                      <span className="font-bold text-slate-800 text-sm">{activeReceipt.receipt_no}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Date & Time</span>
+                      <span className="font-semibold text-slate-850">
+                        {new Date(activeReceipt.payment_date).toLocaleString('en-IN')}
+                      </span>
+                    </div>
                     <div>
                       <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Member Name</span>
-                      <span className="font-semibold text-slate-800 text-sm">Adv. {user.first_name} {user.last_name}</span>
+                      <span className="font-semibold text-slate-850">Adv. {user.first_name} {user.last_name}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Enrolment Roll No</span>
-                      <span className="font-semibold text-slate-800 text-sm">{advocate.enrolment_no}</span>
-                    </div>
-                  </div>
-
-                  {/* Payment Lines Table */}
-                  <div className="py-2">
-                    <table className="w-full text-left text-xs border-collapse border border-slate-200">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
-                          <th className="px-3 py-2 border-r border-slate-200">Billing Period</th>
-                          <th className="px-3 py-2 border-r border-slate-200">Line Component</th>
-                          <th className="px-3 py-2 text-right">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {paymentLines
-                          .filter((l) => l.transaction_id === activeReceipt.id)
-                          .map((line) => (
-                            <tr key={line.id} className="hover:bg-slate-50/50">
-                              <td className="px-3 py-2 border-r border-slate-200 font-medium text-slate-800">
-                                {line.month}/{line.year}
-                              </td>
-                              <td className="px-3 py-2 border-r border-slate-200 text-slate-500 capitalize">
-                                {line.fee_component.replace('_', ' ').toLowerCase()}
-                              </td>
-                              <td className="px-3 py-2 text-right font-semibold text-slate-850">
-                                ₹{line.amount.toFixed(2)}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                      <tfoot>
-                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold">
-                          <td colSpan={2} className="px-3 py-2 text-right border-r border-slate-200 text-slate-900">Total Paid:</td>
-                          <td className="px-3 py-2 text-right text-emerald-700 text-sm">₹{activeReceipt.total_amount.toFixed(2)}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-
-                  {/* Voucher Remarks */}
-                  <div className="py-3 text-[11px] space-y-1.5 border-t border-slate-100">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Payment Mode:</span>
-                      <span className="font-semibold text-slate-800 uppercase">{activeReceipt.payment_mode}</span>
-                    </div>
-                    {activeReceipt.transaction_ref && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Transaction Ref:</span>
-                        <span className="font-semibold text-slate-800">{activeReceipt.transaction_ref}</span>
-                      </div>
-                    )}
-                    {activeReceipt.remarks && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remarks:</span>
-                        <span className="font-semibold text-slate-800">{activeReceipt.remarks}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between border-t border-slate-100 pt-2 mt-2">
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Collected By:</span>
-                      <span className="font-semibold text-slate-800">Staff Administrator</span>
+                      <span className="font-semibold text-slate-850">{advocate.enrolment_no}</span>
                     </div>
                   </div>
                 </div>
+
+                {/* Payment Lines Table */}
+                <div className="py-2">
+                  <table className="w-full text-left text-xs border-collapse border border-slate-200">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
+                        <th className="px-3 py-2 border-r border-slate-200">Billing Period</th>
+                        <th className="px-3 py-2 border-r border-slate-200">Line Component</th>
+                        <th className="px-3 py-2 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {paymentLines
+                        .filter((l) => l.transaction_id === activeReceipt.id)
+                        .map((line) => (
+                          <tr key={line.id} className="hover:bg-slate-50/50">
+                            <td className="px-3 py-2 border-r border-slate-200 font-medium text-slate-800">
+                              {line.month}/{line.year}
+                            </td>
+                            <td className="px-3 py-2 border-r border-slate-200 text-slate-500 capitalize">
+                              {line.fee_component.replace('_', ' ').toLowerCase()}
+                            </td>
+                            <td className="px-3 py-2 text-right font-semibold text-slate-850">
+                              ₹{line.amount.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold">
+                        <td colSpan={2} className="px-3 py-2 text-right border-r border-slate-200 text-slate-900">Total Paid:</td>
+                        <td className="px-3 py-2 text-right text-emerald-700 text-sm">₹{activeReceipt.total_amount.toFixed(2)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* Voucher Remarks */}
+                <div className="py-3 text-[11px] space-y-1.5 border-b border-slate-200">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Payment Mode:</span>
+                    <span className="font-semibold text-slate-850 uppercase">{activeReceipt.payment_mode}</span>
+                  </div>
+                  {activeReceipt.transaction_ref && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Transaction Ref:</span>
+                      <span className="font-semibold text-slate-850">{activeReceipt.transaction_ref}</span>
+                    </div>
+                  )}
+                  {activeReceipt.remarks && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remarks:</span>
+                      <span className="font-semibold text-slate-850">{activeReceipt.remarks}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Signatures */}
+                <div className="flex justify-between pt-8 text-center text-[10px]">
+                  <div>
+                    <span className="text-slate-400 block mb-4">Issued By:</span>
+                    <span className="font-semibold text-slate-900 border-t border-slate-300 pt-1 block">Staff Administrator</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-400 block mb-4">Authorized Signature:</span>
+                    <span className="font-semibold text-slate-900 border-t border-slate-300 pt-1 px-4 block">Treasurer / Cashier</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Print Media style overrides */}
+              <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                  @page {
+                    size: auto;
+                    margin: 20mm;
+                  }
+                  body {
+                    background: white !important;
+                  }
+                  /* Hide non-modal page elements on print (handled globally by index.css, just reset background here) */
+                  #printable-receipt {
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    margin: 0 auto !important;
+                    padding: 24px !important;
+                    box-sizing: border-box !important;
+                    border: 2px solid #1e293b !important;
+                    box-shadow: none !important;
+                    background: white !important;
+                  }
+                }
+              `}} />
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Experience Certificate Modal */}
+      {isCertModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden print:shadow-none print:rounded-none print:w-full print:max-w-none print:max-h-none print:static print:overflow-visible">
+            {/* Modal Actions Header */}
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden">
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-emerald-600" />
+                <span className="font-bold text-slate-800 text-sm">Experience Certificate Preview</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  id="print-trigger"
+                  onClick={handlePrintCert}
+                  className="flex items-center gap-1.5 text-xs font-semibold"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print Certificate
+                </Button>
+                <button 
+                  onClick={() => setIsCertModalOpen(false)}
+                  className="p-1.5 hover:bg-slate-200 text-slate-400 hover:text-slate-650 rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Preview Pane */}
+            <div className="flex-1 overflow-y-auto p-8 bg-slate-100 flex justify-center print:bg-white print:p-0 print:overflow-visible">
+              <OfficialDocument
+                title="Experience Certificate"
+                documentId={certId}
+                date={new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                place={settings.address.split(',')[1]?.trim() || 'Kanhangad'}
+                showFooter={false}
+              >
+                <div className="text-justify text-[13px] leading-loose space-y-5 text-slate-700 font-sans my-auto py-4">
+                  <p>
+                    This is to certify that <span className="font-bold text-slate-900">Adv. {user.first_name} {user.last_name}</span> (Roll No. <span className="font-bold text-slate-900">{advocate.enrolment_no}</span>) is a registered member of the {settings.association_name}, {settings.address.split(',')[1]?.trim() || 'Kanhangad'}.
+                  </p>
+                  <p>
+                    According to our records, he/she was enrolled as an Advocate on the rolls of the Bar Council of Kerala on <span className="font-semibold text-slate-900">{new Date(advocate.date_of_enrolment).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span> and was admitted to this Association as a member on <span className="font-semibold text-slate-900">{new Date(advocate.joined_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>.
+                  </p>
+                  <p>
+                    He/She has been actively and continuously practicing before the Honorable Judicial First Class Magistrate Courts, Subordinate Courts, and other Tribunals at {settings.address.split(',')[1]?.trim() || 'Kanhangad'} for the last <span className="font-bold text-slate-900">{new Date().getFullYear() - new Date(advocate.joined_date).getFullYear()} years</span>.
+                  </p>
+                  {activePositions.length > 0 && (
+                    <p>
+                      He/She is currently serving the association as <span className="font-bold text-slate-900">{activePositions.map(p => p.name).join(', ')}</span>.
+                    </p>
+                  )}
+                  <p>
+                    During this tenure, his/her professional conduct and moral character have been found to be exemplary. We wish him/her success in all future professional endeavors.
+                  </p>
+                </div>
               </OfficialDocument>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Membership Identity Card Modal */}
+      {isIdCardModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden print:shadow-none print:rounded-none print:w-full print:max-w-none print:max-h-none print:static print:overflow-visible">
+            {/* Modal Actions Header */}
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden shrink-0">
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-emerald-600" />
+                <span className="font-bold text-slate-800 text-sm">Membership Identity Card Preview</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  id="print-trigger"
+                  onClick={handlePrintIdCard}
+                  className="flex items-center gap-1.5 text-xs font-semibold"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print ID Card
+                </Button>
+                <button 
+                  onClick={() => setIsIdCardModalOpen(false)}
+                  className="p-1.5 hover:bg-slate-200 text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Preview Pane */}
+            <div className="flex-1 overflow-y-auto p-8 bg-slate-100 flex justify-center print:bg-white print:p-0 print:overflow-visible">
+              <OfficialIdentityCard
+                advocate={advocate}
+                user={user}
+                settings={settings}
+                isAdminPreview={true}
+              />
             </div>
           </div>
         </div>
@@ -593,29 +788,126 @@ export const AdvocateWorkspace: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="md:col-span-1">
-              <CardHeader>
-                <h3 className="text-sm font-bold font-heading">Registry Metadata</h3>
-              </CardHeader>
-              <CardContent className="space-y-4 text-xs text-slate-600">
-                <div className="flex justify-between pb-2.5 border-b border-slate-50">
-                  <span>Date of Birth:</span>
-                  <span className="font-semibold text-slate-800">{advocate.date_of_birth}</span>
-                </div>
-                <div className="flex justify-between pb-2.5 border-b border-slate-50">
-                  <span>Date of Enrolment:</span>
-                  <span className="font-semibold text-slate-800">{advocate.date_of_enrolment}</span>
-                </div>
-                <div className="flex justify-between pb-2.5 border-b border-slate-50">
-                  <span>KAWF Welfare ID:</span>
-                  <span className="font-semibold text-slate-800">{advocate.kawf_no || 'Missing Registration'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Blood Group:</span>
-                  <span className="font-semibold text-slate-800">{advocate.blood_group}</span>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="md:col-span-1 space-y-6">
+              <Card>
+                <CardHeader>
+                  <h3 className="text-sm font-bold font-heading">Registry Metadata</h3>
+                </CardHeader>
+                <CardContent className="space-y-4 text-xs text-slate-600">
+                  <div className="flex justify-between pb-2.5 border-b border-slate-50">
+                    <span>Date of Birth:</span>
+                    <span className="font-semibold text-slate-800">{advocate.date_of_birth}</span>
+                  </div>
+                  <div className="flex justify-between pb-2.5 border-b border-slate-50">
+                    <span>Date of Enrolment:</span>
+                    <span className="font-semibold text-slate-800">{advocate.date_of_enrolment}</span>
+                  </div>
+                  <div className="flex justify-between pb-2.5 border-b border-slate-50">
+                    <span>KAWF Welfare ID:</span>
+                    <span className="font-semibold text-slate-800">{advocate.kawf_no || 'Missing Registration'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Blood Group:</span>
+                    <span className="font-semibold text-slate-800">{advocate.blood_group}</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-slate-100">
+                <CardHeader className="pb-3">
+                  <h3 className="text-sm font-bold font-heading text-slate-900 flex items-center gap-2">
+                    <Award className="h-4 w-4 text-emerald-600 animate-pulse" />
+                    Official Documents & Credentials
+                  </h3>
+                </CardHeader>
+                <CardContent className="space-y-6 divide-y divide-slate-150">
+                  {/* Experience Certificate Section */}
+                  <div className="space-y-3.5 pb-4">
+                    <div className="space-y-1">
+                      <h4 className="text-[11px] font-extrabold text-slate-800 uppercase tracking-wider">Experience Certificate</h4>
+                      <p className="text-[11px] text-slate-500 leading-normal">
+                        Generate experience certificate verifying membership date, good standing, and roles.
+                      </p>
+                    </div>
+
+                    {certEligibility.eligible ? (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 flex items-start gap-2">
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-650 shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="text-[11px] font-semibold text-emerald-950">Active / In Good Standing</h4>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-rose-50 border border-rose-100 rounded-lg p-2.5 flex items-start gap-2">
+                        <Lock className="h-3.5 w-3.5 text-rose-650 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-[11px] font-semibold text-rose-950">Access Restricted</h4>
+                          <p className="text-[10px] text-rose-700 mt-0.5 leading-normal truncate font-sans">
+                            {certEligibility.reason}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end pt-1">
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          setIsCertModalOpen(true);
+                          logActivity('ID_CARD_PREVIEWED', advocate.id, { document_type: 'Experience Certificate', performed_by_role: 'admin' });
+                        }}
+                        disabled={!certEligibility.eligible}
+                        className="text-xs font-semibold py-1 h-7 cursor-pointer"
+                      >
+                        Preview & Print
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Membership Identity Card Section */}
+                  <div className="space-y-3.5 pt-4">
+                    <div className="space-y-1">
+                      <h4 className="text-[11px] font-extrabold text-slate-800 uppercase tracking-wider">Membership Identity Card</h4>
+                      <p className="text-[11px] text-slate-500 leading-normal">
+                        Generate membership identification card. Standard CR80 PVC dimension printable.
+                      </p>
+                    </div>
+
+                    {idCardEligibility.eligible ? (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 flex items-start gap-2">
+                        <CheckCircle className="h-3.5 w-3.5 text-emerald-650 shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="text-[11px] font-semibold text-emerald-950">Identity Card Verified</h4>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-amber-50 border border-amber-250 rounded-lg p-2.5 flex items-start gap-2">
+                        <ShieldAlert className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-[11px] font-semibold text-amber-950">Status: {advocate.status}</h4>
+                          <p className="text-[10px] text-amber-750 mt-0.5 leading-normal font-sans">
+                            {idCardEligibility.reason || 'Watermarked preview only.'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end pt-1">
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          setIsIdCardModalOpen(true);
+                          logActivity('ID_CARD_PREVIEWED', advocate.id, { document_type: 'Membership Identity Card', performed_by_role: 'admin' });
+                        }}
+                        className="text-xs font-semibold py-1 h-7 cursor-pointer"
+                      >
+                        Preview & Print
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 

@@ -60,7 +60,7 @@ export const useAuthService = () => {
   };
 
   const verifyCurrentPassword = async (password: string) => {
-    return verifyPassword(password);
+    return verifyPassword(password, currentUser);
   };
 
   return {

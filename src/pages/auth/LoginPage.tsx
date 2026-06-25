@@ -1,21 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuthService';
+import { useMockDB } from '@/contexts/MockDBContext';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Scale, ShieldAlert } from 'lucide-react';
+import { Scale, ShieldAlert, Key } from 'lucide-react';
 import { ROUTES } from '@/config/routes';
 import { PERMISSIONS } from '@/config/permissions';
 
 export const LoginPage: React.FC = () => {
   const { login, currentUser } = useAuthService();
+  const { users, setUsers, setCurrentUser } = useMockDB();
   const navigate = useNavigate();
   const location = useLocation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Password reset fields
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState<string | null>(null);
 
   // Fetch the attempted page redirect or fallback to default dashboards
   const from = location.state?.from?.pathname;
@@ -32,6 +39,12 @@ export const LoginPage: React.FC = () => {
     try {
       const user = await login(username.trim(), password.trim());
       if (user) {
+        // Intercept if password change is required
+        if (user.must_change_password) {
+          setLoading(false);
+          return;
+        }
+
         // Successful login, determine redirect based on permissions
         if (from) {
           navigate(from, { replace: true });
@@ -41,12 +54,64 @@ export const LoginPage: React.FC = () => {
           navigate(ROUTES.DASHBOARD, { replace: true });
         }
       } else {
-        setError('Authentication failed. Please verify enrolment/mobile number and password.');
+        setError('Authentication failed. Please verify username/enrolment and password.');
       }
     } catch (err) {
       setError('An error occurred during authentication.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || !confirmPassword) {
+      setChangePasswordError('Please fill out all fields.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setChangePasswordError('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePasswordError('Passwords do not match.');
+      return;
+    }
+    if (newPassword === 'pass@123') {
+      setChangePasswordError('Please choose a password other than the default temporary key.');
+      return;
+    }
+
+    if (!currentUser) return;
+
+    // Update user in mock database
+    const userIndex = users.findIndex((u) => u.id === currentUser.id);
+    if (userIndex !== -1) {
+      const updatedUser = {
+        ...currentUser,
+        password: newPassword,
+        must_change_password: false,
+      };
+
+      const newUsers = [...users];
+      newUsers[userIndex] = updatedUser;
+
+      setUsers(newUsers);
+      localStorage.setItem('jd_users', JSON.stringify(newUsers));
+
+      // Update session storage
+      setCurrentUser(updatedUser);
+      sessionStorage.setItem('jd_current_user', JSON.stringify(updatedUser));
+      setChangePasswordError(null);
+
+      // Successful redirect
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (updatedUser.user_permissions.includes(PERMISSIONS.VIEW_OPERATIONAL_DASHBOARD)) {
+        navigate(ROUTES.ADMIN, { replace: true });
+      } else {
+        navigate(ROUTES.DASHBOARD, { replace: true });
+      }
     }
   };
 
@@ -68,6 +133,9 @@ export const LoginPage: React.FC = () => {
   // If already logged in, redirect away
   React.useEffect(() => {
     if (currentUser) {
+      if (currentUser.must_change_password) {
+        return; // Block redirect if they must change password
+      }
       if (currentUser.user_permissions.includes(PERMISSIONS.VIEW_OPERATIONAL_DASHBOARD)) {
         navigate(ROUTES.ADMIN, { replace: true });
       } else {
@@ -96,6 +164,50 @@ export const LoginPage: React.FC = () => {
         </CardHeader>
 
         <CardContent className="px-6 py-4">
+          {currentUser && currentUser.must_change_password ? (
+            <form onSubmit={handleChangePasswordSubmit} className="space-y-4">
+              <div className="flex items-center gap-2 text-white font-bold text-sm mb-1 pb-1.5 border-b border-slate-900">
+                <Key className="h-4.5 w-4.5 text-emerald-500" />
+                <span>Password Reset Required</span>
+              </div>
+              <p className="text-xs text-slate-450 leading-relaxed mb-2">
+                This is a temporary account or your administrator has requested a password reset. Choose a new secure password.
+              </p>
+
+              <Input
+                label="New Password"
+                type="password"
+                placeholder="Choose new password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="bg-slate-900 border-slate-800 text-slate-200 focus:ring-emerald-500"
+              />
+
+              <Input
+                label="Confirm New Password"
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-slate-900 border-slate-800 text-slate-200 focus:ring-emerald-500"
+              />
+
+              {changePasswordError && (
+                <div className="bg-rose-950/40 border border-rose-900 text-rose-300 text-xs p-3 rounded-lg flex items-start gap-2.5">
+                  <ShieldAlert className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
+                  <span>{changePasswordError}</span>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                variant="secondary"
+                className="w-full h-10 mt-2 font-semibold"
+              >
+                Update Password & Login
+              </Button>
+            </form>
+          ) : (
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <Input
               label="Username (Mobile or Enrolment Number)"
@@ -131,7 +243,7 @@ export const LoginPage: React.FC = () => {
             >
               Sign In
             </Button>
-          </form>
+          </form>)}
 
           {/* Quick Fill Demo Section */}
           <div className="mt-8 pt-6 border-t border-slate-900">

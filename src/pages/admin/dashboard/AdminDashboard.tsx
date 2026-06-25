@@ -19,6 +19,7 @@ import {
   Info,
   X,
   ArrowRightLeft,
+  Briefcase,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -37,7 +38,7 @@ import {
 } from 'recharts';
 
 export const AdminDashboard: React.FC = () => {
-  const { currentUser, advocates, transactions, dues } = useMockDB();
+  const { currentUser, advocates, transactions, dues, employeeProfiles } = useMockDB();
   const { getOperationalNotifications } = useReportService();
   const { treasuryTransactions, addTreasuryTransaction, canAddTransactions } = useTreasuryService();
   const navigate = useNavigate();
@@ -275,6 +276,11 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const totalEmployees = employeeProfiles.length;
+  const activeEmployees = employeeProfiles.filter((e) => e.status === 'ACTIVE').length;
+  const suspendedEmployees = employeeProfiles.filter((e) => e.status === 'SUSPENDED').length;
+  const retiredEmployees = employeeProfiles.filter((e) => e.status === 'RETIRED').length;
+
   return (
     <div className="space-y-6">
       {/* Primary KPI Row */}
@@ -310,6 +316,43 @@ export const AdminDashboard: React.FC = () => {
           className="border-l-4 border-amber-500 bg-white"
           iconClassName="text-amber-700 bg-amber-55/60"
         />
+      </div>
+
+      {/* Employee Statistics Row */}
+      <div className="bg-slate-50/50 border border-slate-200/50 rounded-xl p-6 space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-heading">
+          Office Employees Overview
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            label="Total Employees"
+            value={`${totalEmployees} ${totalEmployees === 1 ? 'Employee' : 'Employees'}`}
+            icon={Users}
+            className="border-l-4 border-emerald-600 bg-white shadow-none"
+            iconClassName="text-emerald-600 bg-emerald-50"
+          />
+          <StatCard
+            label="Active Employees"
+            value={`${activeEmployees} Active`}
+            icon={Activity}
+            className="border-l-4 border-indigo-650 bg-white shadow-none"
+            iconClassName="text-indigo-655 bg-indigo-50"
+          />
+          <StatCard
+            label="Suspended Employees"
+            value={`${suspendedEmployees} Suspended`}
+            icon={AlertCircle}
+            className="border-l-4 border-rose-500 bg-white shadow-none"
+            iconClassName="text-rose-500 bg-rose-50"
+          />
+          <StatCard
+            label="Retired Employees"
+            value={`${retiredEmployees} Retired`}
+            icon={Briefcase}
+            className="border-l-4 border-slate-450 bg-white shadow-none"
+            iconClassName="text-slate-500 bg-slate-50"
+          />
+        </div>
       </div>
 
       {/* Collections by Payment Method */}

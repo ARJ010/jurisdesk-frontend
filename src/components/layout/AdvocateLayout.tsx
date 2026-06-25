@@ -149,7 +149,7 @@ export const AdvocateLayout: React.FC = () => {
                     className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium cursor-pointer text-left"
                   >
                     <UserIcon className="h-3.5 w-3.5 text-slate-400" />
-                    My Profile
+                    Edit Profile
                   </button>
                   <button
                     onClick={() => {

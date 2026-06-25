@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { OfficePosition } from '@/types';
 import { OfficialDocument } from '@/components/document/OfficialDocument';
+import { OfficialIdentityCard } from '@/components/document/OfficialIdentityCard';
 import { useMockDB } from '@/contexts/MockDBContext';
 import { usePaymentService } from '@/hooks/usePaymentService';
 import { useReportService } from '@/hooks/useReportService';
@@ -27,10 +28,12 @@ import {
   AlertCircle,
   MapPin
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export const AdvocateDashboard: React.FC = () => {
-  const { currentUser, advocates, officePositions, officeTerms, settings } = useMockDB();
+  const { currentUser, advocates, officePositions, officeTerms, settings, isAdvocateEligibleForIDCard, logActivity } = useMockDB();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { getAdvocateDueBalance, getAdvocateDues } = usePaymentService();
   const { getAdvocateReceipts } = useReportService();
   const { isAdvocateEligibleForCertificate } = useCertificateService();
@@ -38,6 +41,7 @@ export const AdvocateDashboard: React.FC = () => {
   const { updateAdvocateProfile } = useAdvocateService();
 
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const [isIdCardModalOpen, setIsIdCardModalOpen] = useState(false);
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
 
   const [profileMobile, setProfileMobile] = useState('');
@@ -113,16 +117,17 @@ export const AdvocateDashboard: React.FC = () => {
   const unpaidDuesCount = dues.filter((d) => d.status === 'UNPAID').length;
   const receipts = advocate ? getAdvocateReceipts(advocate.id).slice(0, 3) : [];
   const eligibility = advocate ? isAdvocateEligibleForCertificate(advocate.id) : { eligible: false, reason: 'Profile not loaded' };
+  const idCardEligibility = advocate ? isAdvocateEligibleForIDCard(advocate.id) : { eligible: false, reason: 'Profile not loaded' };
 
   // Trigger Edit Profile modal open if ?edit_profile=true query param is present
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search);
     if (params.get('edit_profile') === 'true') {
       handleOpenEditModal();
       // Remove query parameter from browser address bar without forcing reload
-      window.history.replaceState({}, '', window.location.pathname);
+      navigate(location.pathname, { replace: true });
     }
-  }, [window.location.search, advocate]);
+  }, [location.search, advocate, navigate]);
 
   // Calculate current active office positions sorted by display_order
   const activeOfficeTerms = advocate ? officeTerms.filter(t => t.advocate === advocate.id && t.is_current) : [];
@@ -172,7 +177,17 @@ export const AdvocateDashboard: React.FC = () => {
     text: 'Notice: The annual September Onam Contribution contribution of ₹500.00 is due by September 30, 2026. Advance payments are accepted.',
   });
 
-  const handlePrint = () => {
+  const handlePrintCert = () => {
+    if (advocate) {
+      logActivity('CERTIFICATE_GENERATED', advocate.id);
+    }
+    window.print();
+  };
+
+  const handlePrintIdCard = () => {
+    if (advocate) {
+      logActivity('ID_CARD_PRINTED', advocate.id);
+    }
     window.print();
   };
 
@@ -336,49 +351,107 @@ export const AdvocateDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Experience Certificate Panel */}
+          {/* Official Documents & Credentials Panel */}
           <Card className="border-slate-100">
             <CardHeader>
               <h3 className="text-sm font-bold font-heading text-slate-900 flex items-center gap-2">
                 <Award className="h-4 w-4 text-emerald-600" />
-                Experience Credentials
+                Official Documents & Credentials
               </h3>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-xs text-slate-500 leading-normal">
-                Generate an officially stamped Bar Association Experience Certificate verifying your registration date, practicing status, and good standing.
-              </p>
-
-              {eligibility.eligible ? (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3.5 flex items-start gap-3">
-                  <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-semibold text-emerald-950">Credential Access Active</h4>
-                    <p className="text-[11px] text-emerald-700 mt-1">
-                      You are in good standing with active status and zero outstanding balance. You can preview and print your Experience Certificate.
+            <CardContent className="space-y-6 divide-y divide-slate-150">
+              {/* Experience Certificate Section */}
+              <div className="space-y-3.5 pb-6">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Experience Certificate</h4>
+                    <p className="text-xs text-slate-500 leading-normal">
+                      Generate an officially stamped Bar Association Experience Certificate verifying your registration date, practicing status, and good standing.
                     </p>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-rose-50 border border-rose-100 rounded-lg p-3.5 flex items-start gap-3">
-                  <Lock className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-semibold text-rose-950">Credential Access Blocked</h4>
-                    <p className="text-[11px] text-rose-700 mt-1">
-                      {eligibility.reason}
+
+                {eligibility.eligible ? (
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex items-start gap-2.5">
+                    <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-semibold text-emerald-950">Certificate Access Active</h4>
+                      <p className="text-[11px] text-emerald-700 mt-0.5 leading-normal">
+                        You are in good standing with active status and zero outstanding balance. You can preview and print your Experience Certificate.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-rose-50 border border-rose-100 rounded-lg p-3 flex items-start gap-2.5">
+                    <Lock className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-semibold text-rose-950">Certificate Access Blocked</h4>
+                      <p className="text-[11px] text-rose-700 mt-0.5 leading-normal">
+                        {eligibility.reason}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-1 flex justify-end">
+                  <Button 
+                    onClick={() => {
+                      setIsCertModalOpen(true);
+                      logActivity('ID_CARD_PREVIEWED', advocate.id, { document_type: 'Experience Certificate' });
+                    }}
+                    disabled={!eligibility.eligible}
+                    className="text-xs font-semibold"
+                  >
+                    Preview & Print Certificate
+                  </Button>
+                </div>
+              </div>
+
+              {/* Membership Identity Card Section */}
+              <div className="space-y-3.5 pt-6">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Membership Identity Card</h4>
+                    <p className="text-xs text-slate-500 leading-normal">
+                      Generate your official Bar Association Membership Identity Card. Styled for standard PVC printing dimensions.
                     </p>
                   </div>
                 </div>
-              )}
 
-              <div className="pt-2 flex justify-end">
-                <Button 
-                  onClick={() => setIsCertModalOpen(true)}
-                  disabled={!eligibility.eligible}
-                  className="text-xs font-semibold"
-                >
-                  Preview & Print Certificate
-                </Button>
+                {idCardEligibility.eligible ? (
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 flex items-start gap-2.5">
+                    <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-semibold text-emerald-950">Identity Card Access Active</h4>
+                      <p className="text-[11px] text-emerald-700 mt-0.5 leading-normal">
+                        Your membership status is active and enrolment data is verified. You can preview and print your Membership Identity Card.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-rose-50 border border-rose-100 rounded-lg p-3 flex items-start gap-2.5">
+                    <Lock className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-semibold text-rose-950">Identity Card Access Blocked</h4>
+                      <p className="text-[11px] text-rose-700 mt-0.5 leading-normal">
+                        {idCardEligibility.reason}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-1 flex justify-end">
+                  <Button 
+                    onClick={() => {
+                      setIsIdCardModalOpen(true);
+                      logActivity('ID_CARD_PREVIEWED', advocate.id, { document_type: 'Membership Identity Card' });
+                    }}
+                    disabled={!idCardEligibility.eligible}
+                    className="text-xs font-semibold"
+                  >
+                    Preview & Print ID Card
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -457,7 +530,7 @@ export const AdvocateDashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Button 
                   id="print-trigger"
-                  onClick={handlePrint}
+                  onClick={handlePrintCert}
                   className="flex items-center gap-1.5 text-xs font-semibold"
                 >
                   <Printer className="h-4 w-4" />
@@ -503,6 +576,46 @@ export const AdvocateDashboard: React.FC = () => {
                   </p>
                 </div>
               </OfficialDocument>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isIdCardModalOpen && idCardEligibility.eligible && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden print:shadow-none print:rounded-none print:w-full print:max-w-none print:max-h-none print:static print:overflow-visible">
+            {/* Modal Actions Header */}
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden shrink-0">
+              <div className="flex items-center gap-2">
+                <Award className="h-5 w-5 text-emerald-600" />
+                <span className="font-bold text-slate-800 text-sm">Membership Identity Card Preview</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  id="print-trigger"
+                  onClick={handlePrintIdCard}
+                  className="flex items-center gap-1.5 text-xs font-semibold"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print ID Card
+                </Button>
+                <button 
+                  onClick={() => setIsIdCardModalOpen(false)}
+                  className="p-1.5 hover:bg-slate-200 text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Preview Pane */}
+            <div className="flex-1 overflow-y-auto p-8 bg-slate-100 flex justify-center print:bg-white print:p-0 print:overflow-visible">
+              <OfficialIdentityCard
+                advocate={advocate}
+                user={currentUser}
+                settings={settings}
+                isAdminPreview={false}
+              />
             </div>
           </div>
         </div>
