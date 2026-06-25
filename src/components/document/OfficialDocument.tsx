@@ -7,6 +7,7 @@ interface OfficialDocumentProps {
   documentId?: string;
   date?: string;
   place?: string;
+  showFooter?: boolean;
   children: React.ReactNode;
 }
 
@@ -15,6 +16,7 @@ export const OfficialDocument: React.FC<OfficialDocumentProps> = ({
   documentId,
   date,
   place,
+  showFooter = true,
   children
 }) => {
   const { settings, officePositions, officeTerms, advocates, users } = useMockDB();
@@ -175,21 +177,23 @@ export const OfficialDocument: React.FC<OfficialDocumentProps> = ({
       </div>
 
       {/* Footer Details */}
-      <div className="w-full pt-3 mt-4 border-t border-slate-200 text-center text-[9px] text-slate-450 font-medium select-none z-10 flex items-center justify-center gap-1.5 uppercase tracking-wider">
-        <span>{settings.association_name} Office</span>
-        <span>|</span>
-        <span>{settings.address}</span>
-        <span>|</span>
-        <span>Ph: {settings.phone}</span>
-        <span>|</span>
-        <span>Email: {settings.email}</span>
-        {settings.website && (
-          <>
-            <span>|</span>
-            <span>Web: {settings.website}</span>
-          </>
-        )}
-      </div>
+      {showFooter && (
+        <div className="w-full pt-3 mt-4 border-t border-slate-200 text-center text-[9px] text-slate-450 font-medium select-none z-10 flex items-center justify-center gap-1.5 uppercase tracking-wider">
+          <span>{settings.association_name} Office</span>
+          <span>|</span>
+          <span>{settings.address}</span>
+          <span>|</span>
+          <span>Ph: {settings.phone}</span>
+          <span>|</span>
+          <span>Email: {settings.email}</span>
+          {settings.website && (
+            <>
+              <span>|</span>
+              <span>Web: {settings.website}</span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Global CSS resets optimized for single A4 printing page */}
       <style dangerouslySetInnerHTML={{ __html: `

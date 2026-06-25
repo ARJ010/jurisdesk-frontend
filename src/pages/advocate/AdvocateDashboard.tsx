@@ -481,6 +481,7 @@ export const AdvocateDashboard: React.FC = () => {
                 documentId={certId}
                 date={formatDate(new Date().toISOString())}
                 place={settings.address.split(',')[1]?.trim() || 'Kanhangad'}
+                showFooter={false}
               >
                 <div className="text-justify text-[13px] leading-loose space-y-5 text-slate-700 font-sans my-auto py-4">
                   <p>
