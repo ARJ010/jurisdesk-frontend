@@ -22,6 +22,7 @@ import { usePaymentService } from '@/hooks/usePaymentService';
 import { useReportService } from '@/hooks/useReportService';
 import { usePaymentRequestService } from '@/hooks/usePaymentRequestService';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { OfficialDocument } from '@/components/document/OfficialDocument';
 
 export const PersonalPayments: React.FC = () => {
   const { 
@@ -749,150 +750,85 @@ export const PersonalPayments: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-6 bg-slate-100 flex justify-center print:bg-white print:p-0 print:overflow-visible">
               
               {/* Receipt Voucher Sheet */}
-              <div 
-                id="printable-receipt"
-                className="bg-white border-2 border-slate-800 p-8 w-full max-w-xl shadow-md flex flex-col justify-between text-slate-800 font-sans print:shadow-none print:border-2 print:p-4"
+              <OfficialDocument
+                title="Receipt Voucher"
+                documentId={selectedTx.receipt_no}
+                date={formatDateTime(selectedTx.payment_date).split(',')[0]}
+                place={settings.address.split(',')[1]?.trim() || 'Kanhangad'}
               >
-                
-                {/* Header */}
-                <div className="text-center space-y-1 pb-4 border-b border-slate-350 flex items-center justify-center gap-4">
-                  {settings.logo_url && (
-                    <img src={settings.logo_url} alt="Logo" className="w-10 h-10 object-contain" />
-                  )}
-                  <div>
-                    <h2 className="text-sm font-bold tracking-widest text-slate-800 uppercase">
-                      {settings.association_name}
-                    </h2>
-                    <p className="text-[9px] text-slate-500 font-semibold">
-                      {settings.address}
-                    </p>
-                    <p className="text-[8px] text-slate-450">
-                      Phone: {settings.phone} | Email: {settings.email}
-                      {settings.website && ` | Web: ${settings.website}`}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Sub-Header & Metadata */}
-                <div className="py-4 space-y-4">
-                  <h3 className="text-center text-xs font-bold tracking-wider text-slate-950 uppercase bg-slate-100 py-1.5 rounded">
-                    OFFICIAL RECEIPTS VOUCHER
-                  </h3>
-
-                  <div className="grid grid-cols-2 gap-y-2 text-xs">
-                    <div>
-                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Receipt No</span>
-                      <span className="font-bold text-slate-800 text-sm">{selectedTx.receipt_no}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Date & Time</span>
-                      <span className="font-semibold text-slate-850">{formatDateTime(selectedTx.payment_date)}</span>
-                    </div>
+                <div className="text-justify text-[13px] leading-loose space-y-6 text-slate-700 font-sans my-auto py-4">
+                  <div className="grid grid-cols-2 gap-y-2 text-xs border-b border-slate-100 pb-4">
                     <div>
                       <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Member Name</span>
-                      <span className="font-semibold text-slate-850">Adv. {currentUser.first_name} {currentUser.last_name}</span>
+                      <span className="font-semibold text-slate-800 text-sm">Adv. {currentUser.first_name} {currentUser.last_name}</span>
                     </div>
                     <div className="text-right">
                       <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Enrolment Roll No</span>
-                      <span className="font-semibold text-slate-850">{advocate.enrolment_no}</span>
+                      <span className="font-semibold text-slate-800 text-sm">{advocate.enrolment_no}</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Line Items Table */}
-                <div className="py-2">
-                  <table className="w-full text-left text-xs border-collapse border border-slate-200">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
-                        <th className="px-3 py-2 border-r border-slate-200">Billing Period</th>
-                        <th className="px-3 py-2 border-r border-slate-200">Fee Component</th>
-                        <th className="px-3 py-2 text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {selectedTxLines.map((line) => (
-                        <tr key={line.id} className="hover:bg-slate-50/50">
-                          <td className="px-3 py-2 border-r border-slate-200 font-medium text-slate-800">
-                            {line.month}/{line.year}
-                          </td>
-                          <td className="px-3 py-2 border-r border-slate-200 text-slate-500">
-                            {line.fee_component === 'SUBSCRIPTION' ? 'Monthly Subscription' : 'Onam contribution'}
-                          </td>
-                          <td className="px-3 py-2 text-right font-semibold text-slate-800">
-                            ₹{line.amount.toFixed(2)}
-                          </td>
+                  {/* Line Items Table */}
+                  <div className="py-2">
+                    <table className="w-full text-left text-xs border-collapse border border-slate-200">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
+                          <th className="px-3 py-2 border-r border-slate-200">Billing Period</th>
+                          <th className="px-3 py-2 border-r border-slate-200">Fee Component</th>
+                          <th className="px-3 py-2 text-right">Amount</th>
                         </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold">
-                        <td colSpan={2} className="px-3 py-2 text-right border-r border-slate-200 text-slate-900">Total Paid:</td>
-                        <td className="px-3 py-2 text-right text-emerald-700 text-sm">₹{selectedTx.total_amount.toFixed(2)}</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                {/* Voucher Remarks */}
-                <div className="py-3 text-[11px] space-y-1.5 border-b border-slate-200">
-                  <div className="flex justify-between">
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Payment Mode:</span>
-                    <span className="font-semibold text-slate-800">{selectedTx.payment_mode}</span>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {selectedTxLines.map((line) => (
+                          <tr key={line.id} className="hover:bg-slate-50/50">
+                            <td className="px-3 py-2 border-r border-slate-200 font-medium text-slate-800">
+                              {line.month}/{line.year}
+                            </td>
+                            <td className="px-3 py-2 border-r border-slate-200 text-slate-500">
+                              {line.fee_component === 'SUBSCRIPTION' ? 'Monthly Dues Subscription' : 'Onam contribution'}
+                            </td>
+                            <td className="px-3 py-2 text-right font-semibold text-slate-800">
+                              ₹{line.amount.toFixed(2)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold">
+                          <td colSpan={2} className="px-3 py-2 text-right border-r border-slate-200 text-slate-900">Total Paid:</td>
+                          <td className="px-3 py-2 text-right text-emerald-700 text-sm">₹{selectedTx.total_amount.toFixed(2)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
-                  {selectedTx.transaction_ref && (
+
+                  {/* Voucher Remarks */}
+                  <div className="py-3 text-[11px] space-y-1.5 border-t border-slate-100">
                     <div className="flex justify-between">
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Transaction Ref:</span>
-                      <span className="font-semibold text-slate-800">{selectedTx.transaction_ref}</span>
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Payment Mode:</span>
+                      <span className="font-semibold text-slate-800">{selectedTx.payment_mode}</span>
                     </div>
-                  )}
-                  {selectedTx.remarks && (
-                    <div className="flex justify-between">
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remarks:</span>
-                      <span className="font-semibold text-slate-800">{selectedTx.remarks}</span>
+                    {selectedTx.transaction_ref && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Transaction Ref:</span>
+                        <span className="font-semibold text-slate-800">{selectedTx.transaction_ref}</span>
+                      </div>
+                    )}
+                    {selectedTx.remarks && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remarks:</span>
+                        <span className="font-semibold text-slate-800">{selectedTx.remarks}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-slate-100 pt-2 mt-2">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Collected By:</span>
+                      <span className="font-semibold text-slate-800">{getCollectorName(selectedTx.collected_by_id)}</span>
                     </div>
-                  )}
-                </div>
-
-                {/* Footer Signatures */}
-                <div className="flex justify-between pt-8 text-center text-[10px]">
-                  <div>
-                    <span className="text-slate-400 block mb-4">Issued By:</span>
-                    <span className="font-semibold text-slate-900 border-t border-slate-300 pt-1 block">{getCollectorName(selectedTx.collected_by_id)}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-slate-400 block mb-4">Authorized Signature:</span>
-                    <span className="font-semibold text-slate-900 border-t border-slate-300 pt-1 px-4 block">Treasurer / Cashier</span>
                   </div>
                 </div>
-
-              </div>
-
+              </OfficialDocument>
             </div>
-
           </div>
-
-          {/* Global Print Media styles injecting */}
-          <style dangerouslySetInnerHTML={{ __html: `
-            @media print {
-              @page {
-                size: auto;
-                margin: 20mm;
-              }
-              body {
-                background: white !important;
-              }
-              #printable-receipt {
-                width: 100% !important;
-                max-width: 100% !important;
-                margin: 0 auto !important;
-                padding: 24px !important;
-                box-sizing: border-box !important;
-                border: 2px solid #1e293b !important;
-                box-shadow: none !important;
-                background: white !important;
-              }
-            }
-          `}} />
         </div>
       )}
     </div>

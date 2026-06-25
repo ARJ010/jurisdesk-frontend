@@ -133,8 +133,9 @@ export const AdvocateDashboard: React.FC = () => {
 
   // Generate dynamic certificate ID
   const certYear = new Date().getFullYear();
-  const advocateIdPart = advocate ? advocate.id.split('-')[1] || '0001' : '0001';
-  const certId = `HBA-EC-${certYear}-${advocateIdPart.padStart(4, '0')}`;
+  const advocateIndex = advocate ? advocates.findIndex(a => a.id === advocate.id) : -1;
+  const sequenceNum = advocateIndex !== -1 ? advocateIndex + 1 : 1;
+  const certId = `HBA-EC-${certYear}-${String(sequenceNum).padStart(4, '0')}`;
 
   // We need to import OfficePosition type from types, let's see if we need it
   // Since we use inline typing or it's already imported or we can let it infer, let's let it infer.

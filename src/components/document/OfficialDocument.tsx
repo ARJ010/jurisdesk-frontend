@@ -164,7 +164,7 @@ export const OfficialDocument: React.FC<OfficialDocumentProps> = ({
                 QR Verification
               </span>
               <span className="text-[5px] text-slate-450 mt-0.5 scale-90 origin-top">
-                (Available after backend link)
+                (Available after backend integration)
               </span>
             </div>
 

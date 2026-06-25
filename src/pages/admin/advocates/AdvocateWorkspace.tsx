@@ -7,7 +7,7 @@ import { useAdvocateService } from '@/hooks/useAdvocateService';
 import { useSettingsService } from '@/hooks/useSettingsService';
 import type { OfficePosition } from '@/types';
 import { PERMISSIONS } from '@/config/permissions';
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
+import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -29,6 +29,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import type { PaymentTransaction, PaymentMode } from '@/types';
+import { OfficialDocument } from '@/components/document/OfficialDocument';
 
 export const AdvocateWorkspace: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -365,144 +366,109 @@ export const AdvocateWorkspace: React.FC = () => {
     <div className="space-y-6">
       {/* Printable Receipt Modal Layer (Styled for media print to isolate voucher layout) */}
       {activeReceipt && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 print:p-0 print:bg-white print:static print:overflow-visible">
-          <Card className="w-full max-w-2xl bg-white shadow-2xl relative print:shadow-none print:border-none print:w-full print:max-w-none print:static print:overflow-visible print:max-h-none">
-            {/* Close button - hidden on print */}
-            <button
-              onClick={() => setActiveReceipt(null)}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer print:hidden"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <CardContent className="p-8 print:p-6 space-y-6">
-              <div className="text-center border-b border-slate-200 pb-4 flex items-center justify-center gap-4">
-                {settings.logo_url && (
-                  <img src={settings.logo_url} alt="Logo" className="w-10 h-10 object-contain" />
-                )}
-                <div>
-                  <h1 className="text-lg font-bold tracking-widest text-slate-800 uppercase">
-                    {settings.association_name}
-                  </h1>
-                  <p className="text-[10px] text-slate-500 font-semibold">
-                    {settings.address}
-                  </p>
-                  <p className="text-[9px] text-slate-450 mt-0.5">
-                    Phone: {settings.phone} | Email: {settings.email}
-                    {settings.website && ` | Web: ${settings.website}`}
-                  </p>
-                </div>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
+          <div className="bg-white rounded-xl shadow-2xl relative flex flex-col max-h-[95vh] overflow-hidden print:shadow-none print:border-none print:w-full print:max-w-none print:static print:overflow-visible print:max-h-none">
+            {/* Header / Actions - hidden on print */}
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden shrink-0">
+              <span className="font-bold text-slate-800 text-sm">Receipt Voucher Preview</span>
+              <div className="flex items-center gap-2">
+                <Button id="print-trigger" variant="secondary" className="flex items-center gap-1.5 text-xs font-semibold" onClick={handlePrintReceipt}>
+                  <Printer className="h-4 w-4" /> Print Voucher
+                </Button>
+                <button
+                  onClick={() => setActiveReceipt(null)}
+                  className="p-1.5 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
+            </div>
 
-              {/* Transaction Meta Details */}
-              <div className="grid grid-cols-2 gap-4 text-xs border-b border-slate-100 pb-4">
-                <div className="space-y-1.5">
-                  <p className="text-slate-500">
-                    Receipt No:{' '}
-                    <span className="font-bold text-slate-800">{activeReceipt.receipt_no}</span>
-                  </p>
-                  <p className="text-slate-500">
-                    Date:{' '}
-                    <span className="font-semibold text-slate-700">
-                      {new Date(activeReceipt.payment_date).toLocaleString('en-IN')}
-                    </span>
-                  </p>
-                  <p className="text-slate-500">
-                    Payment Mode:{' '}
-                    <span className="font-semibold text-slate-700 uppercase">
-                      {activeReceipt.payment_mode}
-                    </span>
-                  </p>
-                  {activeReceipt.transaction_ref && (
-                    <p className="text-slate-500">
-                      Reference ID:{' '}
-                      <span className="font-mono text-slate-700 font-semibold bg-slate-50 px-1 rounded border border-slate-100">
-                        {activeReceipt.transaction_ref}
-                      </span>
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-1.5 text-right">
-                  <h4 className="font-bold text-slate-800">{user.first_name} {user.last_name}</h4>
-                  <p className="text-slate-500">Roll No: {advocate.enrolment_no}</p>
-                  <p className="text-slate-500">Mobile: {advocate.mobile_number}</p>
-                </div>
-              </div>
+            {/* Printable Preview Pane */}
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-100 flex justify-center print:bg-white print:p-0 print:overflow-visible">
+              
+              <OfficialDocument
+                title="Receipt Voucher"
+                documentId={activeReceipt.receipt_no}
+                date={new Date(activeReceipt.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                place={settings.address.split(',')[1]?.trim() || 'Kanhangad'}
+              >
+                <div className="text-justify text-[13px] leading-loose space-y-6 text-slate-700 font-sans my-auto py-4">
+                  {/* Transaction Meta Details */}
+                  <div className="grid grid-cols-2 gap-y-2 text-xs border-b border-slate-100 pb-4">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Member Name</span>
+                      <span className="font-semibold text-slate-800 text-sm">Adv. {user.first_name} {user.last_name}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Enrolment Roll No</span>
+                      <span className="font-semibold text-slate-800 text-sm">{advocate.enrolment_no}</span>
+                    </div>
+                  </div>
 
-              {/* Payment Lines Table */}
-              <div className="border border-slate-100 rounded-lg overflow-hidden">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider font-semibold">
-                      <th className="px-4 py-2">Billing Period</th>
-                      <th className="px-4 py-2">Line Component</th>
-                      <th className="px-4 py-2 text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {paymentLines
-                      .filter((l) => l.transaction_id === activeReceipt.id)
-                      .map((line) => (
-                        <tr key={line.id}>
-                          <td className="px-4 py-2 font-semibold text-slate-700">
-                            {line.month}/{line.year}
-                          </td>
-                          <td className="px-4 py-2 text-slate-500 capitalize">
-                            {line.fee_component.replace('_', ' ').toLowerCase()}
-                          </td>
-                          <td className="px-4 py-2 text-right font-bold text-slate-800">
-                            ₹{line.amount.toFixed(2)}
-                          </td>
+                  {/* Payment Lines Table */}
+                  <div className="py-2">
+                    <table className="w-full text-left text-xs border-collapse border border-slate-200">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
+                          <th className="px-3 py-2 border-r border-slate-200">Billing Period</th>
+                          <th className="px-3 py-2 border-r border-slate-200">Line Component</th>
+                          <th className="px-3 py-2 text-right">Amount</th>
                         </tr>
-                      ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-slate-50/50 border-t border-slate-150 font-bold text-slate-900 text-sm">
-                      <td colSpan={2} className="px-4 py-3">Total Amount Paid</td>
-                      <td className="px-4 py-3 text-right text-emerald-700">
-                        ₹{activeReceipt.total_amount.toFixed(2)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {paymentLines
+                          .filter((l) => l.transaction_id === activeReceipt.id)
+                          .map((line) => (
+                            <tr key={line.id} className="hover:bg-slate-50/50">
+                              <td className="px-3 py-2 border-r border-slate-200 font-medium text-slate-800">
+                                {line.month}/{line.year}
+                              </td>
+                              <td className="px-3 py-2 border-r border-slate-200 text-slate-500 capitalize">
+                                {line.fee_component.replace('_', ' ').toLowerCase()}
+                              </td>
+                              <td className="px-3 py-2 text-right font-semibold text-slate-850">
+                                ₹{line.amount.toFixed(2)}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-50 border-t-2 border-slate-300 font-bold">
+                          <td colSpan={2} className="px-3 py-2 text-right border-r border-slate-200 text-slate-900">Total Paid:</td>
+                          <td className="px-3 py-2 text-right text-emerald-700 text-sm">₹{activeReceipt.total_amount.toFixed(2)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
 
-              {/* Signatures */}
-              <div className="flex justify-between pt-12 text-center text-xs">
-                <div className="w-40 border-t border-slate-200 pt-1 text-slate-400 font-medium">
-                  Prepared By
+                  {/* Voucher Remarks */}
+                  <div className="py-3 text-[11px] space-y-1.5 border-t border-slate-100">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Payment Mode:</span>
+                      <span className="font-semibold text-slate-800 uppercase">{activeReceipt.payment_mode}</span>
+                    </div>
+                    {activeReceipt.transaction_ref && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Transaction Ref:</span>
+                        <span className="font-semibold text-slate-800">{activeReceipt.transaction_ref}</span>
+                      </div>
+                    )}
+                    {activeReceipt.remarks && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remarks:</span>
+                        <span className="font-semibold text-slate-800">{activeReceipt.remarks}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-slate-100 pt-2 mt-2">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Collected By:</span>
+                      <span className="font-semibold text-slate-800">Staff Administrator</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-44 border-t border-slate-200 pt-1 text-slate-800 font-bold">
-                  Treasurer / Secretary
-                  <span className="block text-[10px] text-slate-400 font-medium mt-0.5">
-                    {settings.association_name}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-
-            <CardFooter className="bg-slate-50 border-t border-slate-100 flex justify-between print:hidden">
-              <Button variant="outline" onClick={() => setActiveReceipt(null)}>
-                Close Preview
-              </Button>
-              <Button id="print-trigger" variant="secondary" className="flex items-center gap-1.5" onClick={handlePrintReceipt}>
-                <Printer className="h-4 w-4" /> Print Receipt
-              </Button>
-            </CardFooter>
-          </Card>
-
-          {/* Global print styles injection */}
-          <style dangerouslySetInnerHTML={{ __html: `
-            @media print {
-              @page {
-                size: auto;
-                margin: 20mm;
-              }
-              body {
-                background: white !important;
-              }
-            }
-          `}} />
+              </OfficialDocument>
+            </div>
+          </div>
         </div>
       )}
 

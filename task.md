@@ -1,0 +1,27 @@
+- [x] Define types and defaults
+  - [x] Add `SignatureConfig` interface and extend `AssociationSettings` in `src/types/index.ts`
+  - [x] Add defaults to `DEFAULT_ASSOCIATION_SETTINGS` in `src/config/constants.ts`
+  - [x] Update `MockDBContext.tsx` to dynamically merge new settings properties on initialization
+- [x] Implement Settings Page customizations
+  - [x] Add Base64 Logo and Watermark file selectors in `SettingsPage.tsx`
+  - [x] Add Website URL text input in `SettingsPage.tsx`
+  - [x] Add Signature configuration editor (add, remove, edit labels, re-order, toggle enabled) in `SettingsPage.tsx`
+- [x] Create the reusable `<OfficialDocument>` component
+  - [x] Create `src/components/document/OfficialDocument.tsx`
+  - [x] Implement header branding block using settings
+  - [x] Implement office bearers left sidebar sorted by `display_order` (display name, mobile only when available, ignore empty phone numbers)
+  - [x] Implement background watermark layer with low opacity (hides if null)
+  - [x] Implement dynamic signature placeholder layout using settings' signatures list
+  - [x] Implement QR verification placeholder in bottom-right
+  - [x] Implement footer branding block using settings
+  - [x] Add print media stylesheet styling inside component
+- [x] Integrate into Advocate Dashboard
+  - [x] Refactor Experience Certificate preview inside `AdvocateDashboard.tsx` to wrap content inside `<OfficialDocument>`
+  - [x] Generate formal Certificate ID matching `HBA-EC-YYYY-00XX`
+  - [x] Include active bearer positions held by advocate in certificate text
+- [x] Refactor receipt vouchers to consume dynamic settings
+  - [x] Update `PersonalPayments.tsx` receipt print voucher
+  - [x] Update `CollectionsLedger.tsx` receipt print voucher
+  - [x] Update `AdvocateWorkspace.tsx` receipt print voucher
+  - [x] Update `PaymentRequestsPage.tsx` receipt print voucher
+- [x] Run build verification and check output for compiler warnings or errors

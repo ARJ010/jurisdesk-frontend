@@ -16,8 +16,10 @@ import {
   Download,
   ExternalLink,
   ChevronRight,
-  Info
+  Info,
+  Printer
 } from 'lucide-react';
+import { OfficialDocument } from '@/components/document/OfficialDocument';
 
 export const PaymentRequestsPage: React.FC = () => {
   const { users, advocates, getAdvocateDues, transactions, settings } = useMockDB();
@@ -721,101 +723,89 @@ export const PaymentRequestsPage: React.FC = () => {
 
       {/* 2. Modal Overlay for generated receipt preview (Direct reprint voucher style) */}
       {activeReceipt && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 print:p-0 print:bg-white print:static print:overflow-visible">
-          <Card className="w-full max-w-2xl bg-white shadow-2xl relative print:shadow-none print:border-none print:w-full print:max-w-none print:static print:overflow-visible print:max-h-none">
-            {/* Close button - hidden on print */}
-            <button
-              onClick={() => setActiveReceipt(null)}
-              className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer print:hidden"
-            >
-              <XCircle className="h-5 w-5" />
-            </button>
-
-            <CardContent className="p-8 print:p-6 space-y-6">
-              <div className="text-center border-b border-slate-200 pb-4 flex items-center justify-center gap-4">
-                {settings.logo_url && (
-                  <img src={settings.logo_url} alt="Logo" className="w-10 h-10 object-contain" />
-                )}
-                <div>
-                  <h1 className="text-lg font-bold tracking-widest text-slate-800 uppercase">
-                    {settings.association_name}
-                  </h1>
-                  <p className="text-[10px] text-slate-500 font-semibold">
-                    {settings.address}
-                  </p>
-                  <p className="text-[9px] text-slate-450 mt-0.5">
-                    Phone: {settings.phone} | Email: {settings.email}
-                    {settings.website && ` | Web: ${settings.website}`}
-                  </p>
-                </div>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 overflow-y-auto print:p-0 print:bg-white print:static print:overflow-visible">
+          <div className="bg-white rounded-xl shadow-2xl relative flex flex-col max-h-[95vh] overflow-hidden print:shadow-none print:border-none print:w-full print:max-w-none print:static print:overflow-visible print:max-h-none">
+            {/* Header / Actions - hidden on print */}
+            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 print:hidden shrink-0">
+              <span className="font-bold text-slate-800 text-sm">Receipt Voucher Preview</span>
+              <div className="flex items-center gap-2">
+                <Button id="print-trigger" variant="secondary" className="flex items-center gap-1.5 text-xs font-semibold" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4" /> Print Voucher
+                </Button>
+                <button
+                  onClick={() => setActiveReceipt(null)}
+                  className="p-1.5 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-650 transition-colors cursor-pointer"
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
               </div>
+            </div>
 
-              {/* Transaction Meta Details */}
-              <div className="grid grid-cols-2 gap-4 text-xs border-b border-slate-100 pb-4">
-                <div className="space-y-1.5">
-                  <p className="text-slate-500">
-                    Receipt No:{' '}
-                    <span className="font-bold text-slate-800">{activeReceipt.receipt_no}</span>
-                  </p>
-                  <p className="text-slate-500">
-                    Date:{' '}
-                    <span className="font-semibold text-slate-700">
-                      {new Date(activeReceipt.payment_date).toLocaleString('en-IN')}
-                    </span>
-                  </p>
-                  <p className="text-slate-500">
-                    Payment Mode:{' '}
-                    <span className="font-semibold text-slate-700 uppercase">
-                      {activeReceipt.payment_mode}
-                    </span>
-                  </p>
-                  {activeReceipt.transaction_ref && (
-                    <p className="text-slate-500">
-                      Reference ID:{' '}
-                      <span className="font-mono text-slate-700 font-semibold bg-slate-50 px-1 rounded border border-slate-100">
-                        {activeReceipt.transaction_ref}
+            {/* Printable Preview Pane */}
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-100 flex justify-center print:bg-white print:p-0 print:overflow-visible">
+              
+              <OfficialDocument
+                title="Receipt Voucher"
+                documentId={activeReceipt.receipt_no}
+                date={new Date(activeReceipt.payment_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                place={settings.address.split(',')[1]?.trim() || 'Kanhangad'}
+              >
+                <div className="text-justify text-[13px] leading-loose space-y-6 text-slate-700 font-sans my-auto py-4">
+                  {/* Transaction Meta Details */}
+                  <div className="grid grid-cols-2 gap-y-2 text-xs border-b border-slate-100 pb-4">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Member Name</span>
+                      <span className="font-semibold text-slate-800 text-sm">
+                        {(() => {
+                          const details = getAdvocateDetails(activeReceipt.advocate_id);
+                          return details.name;
+                        })()}
                       </span>
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-1.5 text-right">
-                  <h4 className="font-bold text-slate-800">
-                    {(() => {
-                      const details = getAdvocateDetails(activeReceipt.advocate_id);
-                      return details.name;
-                    })()}
-                  </h4>
-                  <p className="text-slate-500">
-                    Roll No:{' '}
-                    {(() => {
-                      const details = getAdvocateDetails(activeReceipt.advocate_id);
-                      return details.enrolment;
-                    })()}
-                  </p>
-                </div>
-              </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-400 block text-[9px] uppercase tracking-wider font-semibold">Enrolment Roll No</span>
+                      <span className="font-semibold text-slate-800 text-sm">
+                        {(() => {
+                          const details = getAdvocateDetails(activeReceipt.advocate_id);
+                          return details.enrolment;
+                        })()}
+                      </span>
+                    </div>
+                  </div>
 
-              {/* Remarks */}
-              {activeReceipt.remarks && (
-                <div className="text-xs bg-slate-50 p-3 rounded-lg border border-slate-100 italic text-slate-650">
-                  Remarks: {activeReceipt.remarks}
-                </div>
-              )}
+                  {/* Voucher Total */}
+                  <div className="bg-slate-50 p-4 rounded-lg border border-slate-150 flex justify-between items-center text-xs font-extrabold text-slate-955">
+                    <span className="uppercase tracking-wide">Total Voucher Amount</span>
+                    <span className="text-sm font-extrabold text-emerald-700">₹{activeReceipt.total_amount.toFixed(2)}</span>
+                  </div>
 
-              {/* Signatures */}
-              <div className="flex justify-between pt-12 text-center text-xs">
-                <div className="w-40 border-t border-slate-200 pt-1 text-slate-400 font-medium">
-                  Prepared By
+                  {/* Voucher Remarks */}
+                  <div className="py-3 text-[11px] space-y-1.5 border-t border-slate-100">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Payment Mode:</span>
+                      <span className="font-semibold text-slate-800 uppercase">{activeReceipt.payment_mode}</span>
+                    </div>
+                    {activeReceipt.transaction_ref && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Transaction Ref:</span>
+                        <span className="font-semibold text-slate-850 font-mono">{activeReceipt.transaction_ref}</span>
+                      </div>
+                    )}
+                    {activeReceipt.remarks && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Remarks:</span>
+                        <span className="font-semibold text-slate-800">{activeReceipt.remarks}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t border-slate-100 pt-2 mt-2">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Collected By:</span>
+                      <span className="font-semibold text-slate-800">Staff Administrator</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-44 border-t border-slate-200 pt-1 text-slate-800 font-bold">
-                  Treasurer / Secretary
-                  <span className="block text-[10px] text-slate-400 font-medium mt-0.5">
-                    {settings.association_name}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </OfficialDocument>
+            </div>
+          </div>
         </div>
       )}
     </div>
