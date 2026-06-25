@@ -123,7 +123,12 @@ export const MockDBProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setTransactions(JSON.parse(getStored(STORAGE_KEYS.TRANSACTIONS) || '[]'));
       setPaymentLines(JSON.parse(getStored(STORAGE_KEYS.PAYMENT_LINES) || '[]'));
       setActivityLogs(JSON.parse(getStored(STORAGE_KEYS.ACTIVITY_LOGS) || '[]'));
-      setSettings(JSON.parse(getStored(STORAGE_KEYS.SETTINGS) || '{}'));
+      const storedSettings = JSON.parse(getStored(STORAGE_KEYS.SETTINGS) || '{}');
+      setSettings({
+        ...DEFAULT_ASSOCIATION_SETTINGS,
+        ...storedSettings,
+        signatures: storedSettings.signatures || DEFAULT_ASSOCIATION_SETTINGS.signatures
+      });
       setOfficePositions(JSON.parse(getStored(STORAGE_KEYS.OFFICE_POSITIONS) || '[]'));
       setOfficeTerms(JSON.parse(getStored(STORAGE_KEYS.OFFICE_TERMS) || '[]'));
       setAdditionalFeeRules(JSON.parse(getStored(STORAGE_KEYS.ADDITIONAL_FEE_RULES) || '[]'));

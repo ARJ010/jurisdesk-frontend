@@ -18,7 +18,7 @@ import {
   ArrowUp,
   ArrowDown
 } from 'lucide-react';
-import type { User, AssociationSettings, AdditionalFeeRule, OfficePosition, AdditionalFeeFrequency, AdditionalFeeAppliesTo } from '@/types';
+import type { User, AssociationSettings, AdditionalFeeRule, OfficePosition, AdditionalFeeFrequency, AdditionalFeeAppliesTo, SignatureConfig } from '@/types';
 
 // Human-friendly labels for permissions
 const PERMISSION_METADATA: Record<string, { label: string; desc: string }> = {
@@ -98,6 +98,9 @@ export const SettingsPage: React.FC = () => {
   const [assocPhone, setAssocPhone] = useState('');
   const [assocEmail, setAssocEmail] = useState('');
   const [assocLogo, setAssocLogo] = useState('');
+  const [assocWebsite, setAssocWebsite] = useState('');
+  const [assocWatermark, setAssocWatermark] = useState('');
+  const [signatures, setSignatures] = useState<SignatureConfig[]>([]);
 
   // Financial Settings Form States (Monthly base dues)
   const [subFee, setSubFee] = useState(0);
@@ -141,6 +144,9 @@ export const SettingsPage: React.FC = () => {
       setAssocPhone(settings.phone || '');
       setAssocEmail(settings.email || '');
       setAssocLogo(settings.logo_url || '');
+      setAssocWebsite(settings.website || '');
+      setAssocWatermark(settings.watermark_url || '');
+      setSignatures(settings.signatures || []);
 
       setSubFee(settings.monthly_subscription_fee || 0);
       setAccountingStart(settings.accounting_start_date || '2024-01-01');
@@ -164,6 +170,9 @@ export const SettingsPage: React.FC = () => {
       phone: assocPhone,
       email: assocEmail,
       logo_url: assocLogo || null,
+      website: assocWebsite || undefined,
+      watermark_url: assocWatermark || null,
+      signatures: signatures,
     };
     updateSettings(newSettings);
     showToast('General configuration updated successfully.');
@@ -491,14 +500,179 @@ export const SettingsPage: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="font-semibold text-slate-700 block">Logo URL (Optional)</label>
+                    <label className="font-semibold text-slate-700 block">Website URL (Optional)</label>
                     <input
                       type="text"
-                      value={assocLogo}
-                      onChange={(e) => setAssocLogo(e.target.value)}
-                      placeholder="https://..."
+                      value={assocWebsite}
+                      onChange={(e) => setAssocWebsite(e.target.value)}
+                      placeholder="e.g. www.hosdurgbar.org"
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-slate-50/50"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="font-semibold text-slate-700 block">Association Logo</label>
+                    <div className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                      {assocLogo ? (
+                        <div className="relative w-12 h-12 bg-white rounded border flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                          <img src={assocLogo} alt="Logo Preview" className="max-w-full max-h-full object-contain" />
+                          <button
+                            type="button"
+                            onClick={() => setAssocLogo('')}
+                            className="absolute inset-0 bg-slate-900/60 opacity-0 hover:opacity-100 flex items-center justify-center text-white transition-opacity font-bold text-[9px] cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 bg-slate-100 rounded border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs shrink-0 select-none">
+                          No Logo
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setAssocLogo(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="text-[10px] text-slate-650 cursor-pointer w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="font-semibold text-slate-700 block">Association Watermark Logo (Optional)</label>
+                    <div className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                      {assocWatermark ? (
+                        <div className="relative w-12 h-12 bg-white rounded border flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                          <img src={assocWatermark} alt="Watermark Preview" className="max-w-full max-h-full object-contain opacity-50" />
+                          <button
+                            type="button"
+                            onClick={() => setAssocWatermark('')}
+                            className="absolute inset-0 bg-slate-900/60 opacity-0 hover:opacity-100 flex items-center justify-center text-white transition-opacity font-bold text-[9px] cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 bg-slate-100 rounded border border-dashed border-slate-300 flex items-center justify-center text-slate-400 text-xs shrink-0 select-none">
+                          No BG
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setAssocWatermark(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="text-[10px] text-slate-650 cursor-pointer w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Signatures Config Section */}
+                <div className="space-y-3 pt-4 border-t border-slate-100">
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                      Official Signatures Configuration
+                    </h3>
+                    <p className="text-[10px] text-slate-450 mt-0.5">
+                      Configure the signature placeholders printed at the bottom of official documents.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 border border-slate-200 rounded-lg p-3 bg-slate-50/30">
+                    {signatures.map((sig, idx) => (
+                      <div key={sig.id} className="flex items-center gap-3 bg-white p-2.5 rounded-lg border border-slate-100 text-xs shadow-sm">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div className="space-y-0.5">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase">Label</label>
+                            <input
+                              type="text"
+                              value={sig.label}
+                              onChange={(e) => {
+                                const newSigs = [...signatures];
+                                newSigs[idx] = { ...newSigs[idx], label: e.target.value };
+                                setSignatures(newSigs);
+                              }}
+                              className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs bg-slate-50/20"
+                            />
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <label className="text-[9px] font-bold text-slate-400 uppercase">Display Order</label>
+                            <input
+                              type="number"
+                              value={sig.display_order}
+                              onChange={(e) => {
+                                const newSigs = [...signatures];
+                                newSigs[idx] = { ...newSigs[idx], display_order: parseInt(e.target.value) || 0 };
+                                setSignatures(newSigs);
+                              }}
+                              className="w-full px-2 py-1 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs bg-slate-50/20"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between sm:justify-start gap-4 sm:pt-4">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={sig.enabled}
+                                onChange={(e) => {
+                                  const newSigs = [...signatures];
+                                  newSigs[idx] = { ...newSigs[idx], enabled: e.target.checked };
+                                  setSignatures(newSigs);
+                                }}
+                                className="h-3.5 w-3.5 accent-slate-900 rounded"
+                              />
+                              <span className="font-semibold text-slate-700">Enabled</span>
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSignatures(signatures.filter((s) => s.id !== sig.id));
+                              }}
+                              className="text-rose-650 hover:text-rose-800 font-bold hover:underline cursor-pointer sm:ml-auto"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newId = `sig-${Date.now()}`;
+                        const newOrder = signatures.length > 0 ? Math.max(...signatures.map((s) => s.display_order)) + 1 : 1;
+                        setSignatures([
+                          ...signatures,
+                          { id: newId, label: 'New Signature', display_order: newOrder, enabled: true },
+                        ]);
+                      }}
+                      className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-bold text-xs px-2.5 py-1.5 border border-dashed border-emerald-300 hover:border-emerald-500 rounded bg-white transition-all cursor-pointer mt-1"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Add Signature Placeholder
+                    </button>
                   </div>
                 </div>
 

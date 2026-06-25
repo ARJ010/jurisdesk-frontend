@@ -101,12 +101,22 @@ export interface BankAccountDetails {
   upi_id: string;
 }
 
+export interface SignatureConfig {
+  id: string;
+  label: string;
+  display_order: number;
+  enabled: boolean;
+}
+
 export interface AssociationSettings {
   association_name: string;
   address: string;
   phone: string;
   email: string;
+  website?: string;
   logo_url: string | null;
+  watermark_url?: string | null;
+  signatures?: SignatureConfig[];
   monthly_subscription_fee: number;
   onam_contribution_fee: number;
   onam_contribution_month: string; // MM

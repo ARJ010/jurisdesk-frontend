@@ -11,7 +11,14 @@ export const DEFAULT_ASSOCIATION_SETTINGS = {
   address: 'Court Road, Kanhangad, Kasaragod, Kerala - 671315',
   phone: '+91 467 220 1234',
   email: 'treasury@hosdurgbar.org',
+  website: 'www.hosdurgbar.org',
   logo_url: null,
+  watermark_url: null,
+  signatures: [
+    { id: 'pres', label: 'President', display_order: 1, enabled: true },
+    { id: 'sec', label: 'Secretary', display_order: 2, enabled: true },
+    { id: 'treas', label: 'Treasurer', display_order: 3, enabled: true }
+  ],
   monthly_subscription_fee: 100.00,
   onam_contribution_fee: 500.00,
   onam_contribution_month: '09', // September

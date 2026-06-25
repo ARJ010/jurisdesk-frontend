@@ -8,7 +8,7 @@ import { Search, Printer, X, FileText, ChevronRight } from 'lucide-react';
 import type { PaymentTransaction, OfficePosition } from '@/types';
 
 export const CollectionsLedger: React.FC = () => {
-  const { transactions, advocates, users, paymentLines, officePositions, officeTerms, currentUser, treasuryTransactions } = useMockDB();
+  const { transactions, advocates, users, paymentLines, officePositions, officeTerms, currentUser, treasuryTransactions, settings } = useMockDB();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMode, setSelectedMode] = useState<string>('ALL');
   const [selectedFinancialYear, setSelectedFinancialYear] = useState<string>('ALL');
@@ -801,10 +801,13 @@ export const CollectionsLedger: React.FC = () => {
               <div className="border border-slate-150 rounded-xl p-6 bg-slate-50/20 space-y-6">
                 {/* Letterhead */}
                 <div className="text-center pb-4 border-b border-slate-150">
-                  <h2 className="text-sm font-extrabold uppercase tracking-wide font-heading text-slate-955">
-                    Hosdurg Bar Association
+                  <h2 className="text-sm font-extrabold uppercase tracking-wide font-heading text-slate-955 flex items-center justify-center gap-2">
+                    {settings.logo_url && (
+                      <img src={settings.logo_url} alt="Logo" className="w-5 h-5 object-contain" />
+                    )}
+                    {settings.association_name}
                   </h2>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Court Road, Kanhangad, Kasaragod, Kerala - 671315</p>
+                  <p className="text-[10px] text-slate-450 mt-0.5">{settings.address}</p>
                   <span className="inline-block mt-3 bg-slate-900 text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full">
                     Official Payment Voucher
                   </span>
@@ -873,7 +876,7 @@ export const CollectionsLedger: React.FC = () => {
                   <div className="text-center">
                     <div className="w-24 border-b border-slate-300 mx-auto mb-1 h-8"></div>
                     <span className="block font-semibold text-slate-800">Authorized Signature</span>
-                    <span className="text-[9px]">Hosdurg Bar Association</span>
+                    <span className="text-[9px]">{settings.association_name}</span>
                   </div>
                 </div>
               </div>
@@ -886,9 +889,9 @@ export const CollectionsLedger: React.FC = () => {
       <div id="printable-ledger" style={{ display: 'none' }}>
         <div style={{ textAlign: 'center', paddingBottom: '16px', borderBottom: '2px solid #ccc' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', textTransform: 'uppercase', color: '#1a202c' }}>
-            Hosdurg Bar Association
+            {settings.association_name}
           </h2>
-          <p style={{ fontSize: '12px', color: '#718096', marginTop: '4px' }}>Court Road, Kanhangad, Kasaragod, Kerala - 671315</p>
+          <p style={{ fontSize: '12px', color: '#718096', marginTop: '4px' }}>{settings.address}</p>
           <span style={{ display: 'inline-block', marginTop: '12px', backgroundColor: '#1a202c', color: 'white', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', padding: '4px 12px', borderRadius: '9999px' }}>
             {activeTab === 'collections' && 'Membership Collections Ledger'}
             {activeTab === 'adjustments' && 'Treasury Adjustments Ledger'}
@@ -1034,7 +1037,7 @@ export const CollectionsLedger: React.FC = () => {
           <div style={{ textAlign: 'center', marginLeft: 'auto' }}>
             <div style={{ width: '96px', borderBottom: '1px solid #e2e8f0', margin: '0 auto 4px auto', height: '32px' }}></div>
             <span style={{ fontWeight: 'bold', color: '#2d3748', display: 'block' }}>Treasurer / Cashier Signature</span>
-            <span style={{ fontSize: '9px' }}>Hosdurg Bar Association</span>
+            <span style={{ fontSize: '9px' }}>{settings.association_name}</span>
           </div>
         </div>
       </div>

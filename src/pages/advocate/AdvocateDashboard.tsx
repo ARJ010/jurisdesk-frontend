@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { OfficePosition } from '@/types';
+import { OfficialDocument } from '@/components/document/OfficialDocument';
 import { useMockDB } from '@/contexts/MockDBContext';
 import { usePaymentService } from '@/hooks/usePaymentService';
 import { useReportService } from '@/hooks/useReportService';
@@ -29,7 +30,7 @@ import {
 import { Link } from 'react-router-dom';
 
 export const AdvocateDashboard: React.FC = () => {
-  const { currentUser, advocates, officePositions, officeTerms } = useMockDB();
+  const { currentUser, advocates, officePositions, officeTerms, settings } = useMockDB();
   const { getAdvocateDueBalance, getAdvocateDues } = usePaymentService();
   const { getAdvocateReceipts } = useReportService();
   const { isAdvocateEligibleForCertificate } = useCertificateService();
@@ -129,6 +130,11 @@ export const AdvocateDashboard: React.FC = () => {
     .map(t => officePositions.find(p => p.id === t.position))
     .filter((p): p is OfficePosition => p !== undefined && p.is_active)
     .sort((a, b) => a.display_order - b.display_order);
+
+  // Generate dynamic certificate ID
+  const certYear = new Date().getFullYear();
+  const advocateIdPart = advocate ? advocate.id.split('-')[1] || '0001' : '0001';
+  const certId = `HBA-EC-${certYear}-${advocateIdPart.padStart(4, '0')}`;
 
   // We need to import OfficePosition type from types, let's see if we need it
   // Since we use inline typing or it's already imported or we can let it infer, let's let it infer.
@@ -469,110 +475,34 @@ export const AdvocateDashboard: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-8 bg-slate-100 flex justify-center print:bg-white print:p-0 print:overflow-visible">
               
               {/* Certificate Sheet (Simulating A4) */}
-              <div 
-                id="printable-certificate"
-                className="bg-white border-8 border-double border-slate-800 p-12 relative w-[210mm] min-h-[297mm] shadow-md flex flex-col justify-between text-slate-800 font-serif print:shadow-none print:border-8 print:p-8"
+              <OfficialDocument
+                title="Experience Certificate"
+                documentId={certId}
+                date={formatDate(new Date().toISOString())}
+                place={settings.address.split(',')[1]?.trim() || 'Kanhangad'}
               >
-                {/* Watermark Logo Initials */}
-                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] select-none pointer-events-none">
-                  <span className="text-[12rem] font-bold tracking-widest font-sans">HBA</span>
-                </div>
-
-                {/* Top Border Header */}
-                <div className="text-center space-y-2 relative border-b-2 border-slate-300 pb-4">
-                  <h2 className="text-2xl font-bold tracking-wide font-sans text-slate-900">
-                    HOSDURG BAR ASSOCIATION
-                  </h2>
-                  <p className="text-[11px] font-sans text-slate-500 font-semibold tracking-wider">
-                    Court Road, Kanhangad, Kasaragod, Kerala - 671315
+                <div className="text-justify text-[13px] leading-loose space-y-5 text-slate-700 font-sans my-auto py-4">
+                  <p>
+                    This is to certify that <span className="font-bold text-slate-900">Adv. {currentUser.first_name} {currentUser.last_name}</span> (Roll No. <span className="font-bold text-slate-900">{advocate.enrolment_no}</span>) is a registered member of the {settings.association_name}, {settings.address.split(',')[1]?.trim() || 'Kanhangad'}.
                   </p>
-                  <p className="text-[10px] font-sans text-slate-400">
-                    Email: office@hosdurgbar.org | Phone: +91 467 220 1234
+                  <p>
+                    According to our records, he/she was enrolled as an Advocate on the rolls of the Bar Council of Kerala on <span className="font-semibold text-slate-900">{formatDate(advocate.date_of_enrolment)}</span> and was admitted to this Association as a member on <span className="font-semibold text-slate-900">{formatDate(advocate.joined_date)}</span>.
+                  </p>
+                  <p>
+                    He/She has been actively and continuously practicing before the Honorable Judicial First Class Magistrate Courts, Subordinate Courts, and other Tribunals at {settings.address.split(',')[1]?.trim() || 'Kanhangad'} for the last <span className="font-bold text-slate-900">{new Date().getFullYear() - new Date(advocate.joined_date).getFullYear()} years</span>.
+                  </p>
+                  {activePositions.length > 0 && (
+                    <p>
+                      He/She is currently serving the association as <span className="font-bold text-slate-900">{activePositions.map(p => p.name).join(', ')}</span>.
+                    </p>
+                  )}
+                  <p>
+                    During this tenure, his/her professional conduct and moral character have been found to be exemplary. We wish him/her success in all future professional endeavors.
                   </p>
                 </div>
-
-                {/* Certificate Core Content */}
-                <div className="my-auto py-12 space-y-12 relative">
-                  
-                  <h3 className="text-center text-xl font-bold tracking-widest text-slate-900 underline underline-offset-8">
-                    EXPERIENCE CERTIFICATE
-                  </h3>
-
-                  <div className="text-justify text-sm leading-loose space-y-6">
-                    <p>
-                      This is to certify that <span className="font-bold text-slate-900">Adv. {currentUser.first_name} {currentUser.last_name}</span> (Roll No. <span className="font-bold text-slate-900">{advocate.enrolment_no}</span>) is a registered member of the Hosdurg Bar Association, Kanhangad.
-                    </p>
-                    <p>
-                      According to our records, he/she was enrolled as an Advocate on the rolls of the Bar Council of Kerala on <span className="font-semibold text-slate-900">{formatDate(advocate.date_of_enrolment)}</span> and was admitted to this Association as a member on <span className="font-semibold text-slate-900">{formatDate(advocate.joined_date)}</span>.
-                    </p>
-                    <p>
-                      He/She has been actively and continuously practicing before the Honorable Judicial First Class Magistrate Courts, Subordinate Courts, and other Tribunals at Kanhangad for the last <span className="font-bold text-slate-900">{new Date().getFullYear() - new Date(advocate.joined_date).getFullYear()} years</span>.
-                    </p>
-                    {activePositions.length > 0 && (
-                      <p>
-                        He/She is currently serving the association as <span className="font-bold text-slate-900">{activePositions.map(p => p.name).join(', ')}</span>.
-                      </p>
-                    )}
-                    <p>
-                      During this tenure, his/her professional conduct and moral character have been found to be exemplary. We wish him/her success in all future professional endeavors.
-                    </p>
-                  </div>
-
-                  {/* Metadata line */}
-                  <div className="flex justify-between text-xs font-sans text-slate-500 pt-8">
-                    <span>Date of Issue: {formatDate(new Date().toISOString())}</span>
-                    <span>Certificate ID: HBA-CERT-{advocate.enrolment_no.replace(/\//g, '-')}-{new Date().getFullYear()}</span>
-                  </div>
-
-                </div>
-
-                {/* Signature Row */}
-                <div className="flex justify-between pt-12 text-center font-sans text-xs relative mt-auto">
-                  <div className="w-1/3 flex flex-col items-center">
-                    <div className="w-32 h-10 border-b border-dotted border-slate-400 mb-2" />
-                    <span className="font-semibold text-slate-900">President</span>
-                    <span className="text-[10px] text-slate-400">Hosdurg Bar Association</span>
-                  </div>
-                  <div className="w-1/3 flex flex-col items-center">
-                    <div className="w-32 h-10 border-b border-dotted border-slate-400 mb-2" />
-                    <span className="font-semibold text-slate-900">Secretary</span>
-                    <span className="text-[10px] text-slate-400">Hosdurg Bar Association</span>
-                  </div>
-                </div>
-
-              </div>
-
+              </OfficialDocument>
             </div>
-
           </div>
-
-          {/* Global Print Media styles injecting */}
-          <style dangerouslySetInnerHTML={{ __html: `
-            @media print {
-              @page {
-                size: A4 portrait;
-                margin: 0;
-              }
-              body {
-                background: white !important;
-              }
-              #printable-certificate {
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: space-between !important;
-                width: 210mm !important;
-                height: 297mm !important;
-                box-sizing: border-box !important;
-                margin: 0 auto !important;
-                padding: 24mm !important;
-                border: 8px double #1e293b !important;
-                box-shadow: none !important;
-                background: white !important;
-                page-break-after: avoid !important;
-                page-break-before: avoid !important;
-              }
-            }
-          `}} />
         </div>
       )}
 

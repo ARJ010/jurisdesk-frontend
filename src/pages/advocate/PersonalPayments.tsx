@@ -29,7 +29,8 @@ export const PersonalPayments: React.FC = () => {
     advocates, 
     paymentLines,
     users,
-    transactions
+    transactions,
+    settings
   } = useMockDB();
 
   const { getAdvocateDues } = usePaymentService();
@@ -754,16 +755,22 @@ export const PersonalPayments: React.FC = () => {
               >
                 
                 {/* Header */}
-                <div className="text-center space-y-1 pb-4 border-b border-slate-300">
-                  <h2 className="text-lg font-bold tracking-wide text-slate-900">
-                    HOSDURG BAR ASSOCIATION
-                  </h2>
-                  <p className="text-[10px] text-slate-500 font-semibold">
-                    Court Road, Kanhangad, Kasaragod, Kerala - 671315
-                  </p>
-                  <p className="text-[9px] text-slate-400">
-                    Phone: +91 467 220 1234 | Email: office@hosdurgbar.org
-                  </p>
+                <div className="text-center space-y-1 pb-4 border-b border-slate-350 flex items-center justify-center gap-4">
+                  {settings.logo_url && (
+                    <img src={settings.logo_url} alt="Logo" className="w-10 h-10 object-contain" />
+                  )}
+                  <div>
+                    <h2 className="text-sm font-bold tracking-widest text-slate-800 uppercase">
+                      {settings.association_name}
+                    </h2>
+                    <p className="text-[9px] text-slate-500 font-semibold">
+                      {settings.address}
+                    </p>
+                    <p className="text-[8px] text-slate-450">
+                      Phone: {settings.phone} | Email: {settings.email}
+                      {settings.website && ` | Web: ${settings.website}`}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Sub-Header & Metadata */}

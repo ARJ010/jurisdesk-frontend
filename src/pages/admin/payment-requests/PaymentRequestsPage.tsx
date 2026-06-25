@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export const PaymentRequestsPage: React.FC = () => {
-  const { users, advocates, getAdvocateDues, transactions } = useMockDB();
+  const { users, advocates, getAdvocateDues, transactions, settings } = useMockDB();
   const { paymentRequests, approveRequest, rejectRequest } = usePaymentRequestService();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -732,18 +732,22 @@ export const PaymentRequestsPage: React.FC = () => {
             </button>
 
             <CardContent className="p-8 print:p-6 space-y-6">
-              {/* Receipt Header */}
-              <div className="text-center border-b border-slate-200 pb-4">
-                <Receipt className="h-8 w-8 mx-auto text-emerald-600 mb-2" />
-                <h1 className="text-xl font-extrabold font-heading text-slate-900 uppercase tracking-wide">
-                  Hosdurg Bar Association
-                </h1>
-                <p className="text-xs text-slate-500 mt-1">
-                  Court Road, Kanhangad, Kasaragod, Kerala - 671315
-                </p>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                  Collection Receipt Voucher
-                </p>
+              <div className="text-center border-b border-slate-200 pb-4 flex items-center justify-center gap-4">
+                {settings.logo_url && (
+                  <img src={settings.logo_url} alt="Logo" className="w-10 h-10 object-contain" />
+                )}
+                <div>
+                  <h1 className="text-lg font-bold tracking-widest text-slate-800 uppercase">
+                    {settings.association_name}
+                  </h1>
+                  <p className="text-[10px] text-slate-500 font-semibold">
+                    {settings.address}
+                  </p>
+                  <p className="text-[9px] text-slate-450 mt-0.5">
+                    Phone: {settings.phone} | Email: {settings.email}
+                    {settings.website && ` | Web: ${settings.website}`}
+                  </p>
+                </div>
               </div>
 
               {/* Transaction Meta Details */}
@@ -806,7 +810,7 @@ export const PaymentRequestsPage: React.FC = () => {
                 <div className="w-44 border-t border-slate-200 pt-1 text-slate-800 font-bold">
                   Treasurer / Secretary
                   <span className="block text-[10px] text-slate-400 font-medium mt-0.5">
-                    Hosdurg Bar Association
+                    {settings.association_name}
                   </span>
                 </div>
               </div>
